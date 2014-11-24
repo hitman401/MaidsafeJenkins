@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.maidsafe;
+package org.jenkinsci.plugins.MaidsafeJenkins;
 
 import hudson.*;
 import hudson.model.*;
@@ -35,41 +35,25 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class MaidsafeJenkinsBuilder extends Builder {
 
-    private String orgName;
-    private String repoSubFolder;
-    private String superProjectName;
-    private String defaultBaseBranch;
+    private final String orgName;
+    private final String repoSubFolder;
+    private final String superProjectName;
+    private final String defaultBaseBranch;
 
     public String getDefaultBaseBranch() {
         return defaultBaseBranch;
-    }
-
-    public void setDefaultBaseBranch(String defaultBaseBranch) {
-        this.defaultBaseBranch = defaultBaseBranch;
     }
 
     public String getOrgName() {
         return orgName;
     }
 
-    public void setOrgName(String orgName) {
-        this.orgName = orgName;
-    }
-
     public String getRepoSubFolder() {
         return repoSubFolder;
     }
 
-    public void setRepoSubFolder(String repoSubFolder) {
-        this.repoSubFolder = repoSubFolder;
-    }
-
     public String getSuperProjectName() {
         return superProjectName;
-    }
-
-    public void setSuperProjectName(String superProjectName) {
-        this.superProjectName = superProjectName;
     }
     
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
@@ -192,6 +176,17 @@ public class MaidsafeJenkinsBuilder extends Builder {
             // Indicates that this builder can be used with all kinds of project types 
             return true;
         }
+        
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
+            // To persist global configuration information,
+            // set that to properties and call save().
+            // ^Can also use req.bindJSON(this, formData);
+            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
+            save();
+            return super.configure(req,formData);
+        }
+
 
         /**
          * This human readable name is used in the configuration screen.
