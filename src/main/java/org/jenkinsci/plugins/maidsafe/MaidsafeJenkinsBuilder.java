@@ -35,28 +35,52 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class MaidsafeJenkinsBuilder extends Builder {
 
-    private final String name;
-    private final String branch;
-    private static File file;
-    private static final String REPO_NAME = "MaidSafe";
+    private String orgName;
+    private String repoSubFolder;
+    private String superProjectName;
+    private String defaultBaseBranch;
+
+    public String getDefaultBaseBranch() {
+        return defaultBaseBranch;
+    }
+
+    public void setDefaultBaseBranch(String defaultBaseBranch) {
+        this.defaultBaseBranch = defaultBaseBranch;
+    }
+
+    public String getOrgName() {
+        return orgName;
+    }
+
+    public void setOrgName(String orgName) {
+        this.orgName = orgName;
+    }
+
+    public String getRepoSubFolder() {
+        return repoSubFolder;
+    }
+
+    public void setRepoSubFolder(String repoSubFolder) {
+        this.repoSubFolder = repoSubFolder;
+    }
+
+    public String getSuperProjectName() {
+        return superProjectName;
+    }
+
+    public void setSuperProjectName(String superProjectName) {
+        this.superProjectName = superProjectName;
+    }
     
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public MaidsafeJenkinsBuilder(String name, String branch) {        
-        this.name = name;
-        this.branch = branch;
+    public MaidsafeJenkinsBuilder(String orgName, String repoSubFolder, String superProjectName, String defaultBaseBranch) {        
+        this.orgName = orgName;
+        this.repoSubFolder = repoSubFolder;
+        this.superProjectName = superProjectName;
+        this.defaultBaseBranch = defaultBaseBranch;
     }
-
-    /**
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
-    public String getName() {
-        return name;
-    }
-        
-    public String getBranch() {
-        return branch;
-    }           
+    
     
      @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
@@ -65,16 +89,16 @@ public class MaidsafeJenkinsBuilder extends Builder {
           GitHubHelper submoduleHelper;
           GitHubPullRequestHelper ghprh;          
           final String ISSUE_KEY_PARAM = "issueKey";          
-          String ORG_NAME = "maidsafe"; // TODO  param from config
-          String ROOT_REPO = "Maidsafe"; // TODO  param from config
-          String DEF_BASE_BRANCH = "master"; // TODO  param from config
-          String superProjName = "MaidSafe"; //TODO params config or via cmd
+//          String ORG_NAME = "maidsafe"; // TODO  param from config
+//          String ROOT_REPO = "Maidsafe"; // TODO  param from config
+//          String DEF_BASE_BRANCH = "master"; // TODO  param from config
+//          String superProjName = "MaidSafe"; //TODO params config or via cmd
           String issueKey;
           ShellScript script;
           FilePath rootDir;
           PrintStream logger;
           logger = listener.getLogger();
-          rootDir = new FilePath(new File(build.getWorkspace() + "/" + ROOT_REPO));
+          rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
           logger.println("Git REPO :: " + rootDir.getRemote());
           try {
             envVars = build.getEnvironment(listener);
@@ -88,8 +112,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
                 return false;
             }
             logger.println("Process initiated for token " + issueKey);
-            submoduleHelper = new GitHubHelper(superProjName, rootDir, logger, script, DEF_BASE_BRANCH);                                 
-            ghprh = new GitHubPullRequestHelper(ORG_NAME, submoduleHelper.getModuleNames(), logger);
+            submoduleHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch);                                 
+            ghprh = new GitHubPullRequestHelper(orgName, submoduleHelper.getModuleNames(), logger);
             Map<String, Map<String, Object>> pullRequest = ghprh
                     .getMatchingPR(issueKey, 
                     GitHubPullRequestHelper.Filter.OPEN, 
@@ -135,14 +159,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
      }
     @Extension
     public static class DescriptorImpl  extends BuildStepDescriptor<Builder> {
-        /**
-         * To persist global configuration information,
-         * simply store it in a field and call save().
-         *
-         * <p>
-         * If you don't want fields to be persisted, use <tt>transient</tt>.
-         */
-        private boolean useFrench;
 
         /**
          * In order to load the persisted global configuration, you have to 
@@ -164,23 +180,13 @@ public class MaidsafeJenkinsBuilder extends Builder {
          *      prevent the form from being saved. It just means that a message
          *      will be displayed to the user. 
          */
-        public FormValidation doCheckName(@QueryParameter String value)
+        public FormValidation doCheckOrgName(@QueryParameter String value)
                 throws IOException, ServletException {
             if (value.length() == 0)
-                return FormValidation.error("Please set a name");
-            if (value.length() < 4)
-                return FormValidation.warning("Isn't the name too short?");
+                return FormValidation.error("Please set a organisation name");            
             return FormValidation.ok();
         }
         
-        public FormValidation doCheckBranch(@QueryParameter String branch)
-                throws IOException, ServletException {
-            if (branch.length() == 0)
-                return FormValidation.error("Please set a branch");
-            if (branch.length() < 4)
-                return FormValidation.warning("Isn't the name too short?");
-            return FormValidation.ok();
-        }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             // Indicates that this builder can be used with all kinds of project types 
@@ -191,29 +197,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Say hello world";
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
-            useFrench = formData.getBoolean("useFrench");
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            save();
-            return super.configure(req,formData);
-        }
-
-        /**
-         * This method returns true if the global configuration says we should speak French.
-         *
-         * The method name is bit awkward because global.jelly calls this method to determine
-         * the initial state of the checkbox by the naming convention.
-         */
-        public boolean getUseFrench() {
-            return useFrench;
-        }
+            return "Maidsafe CI Builder";
+        }        
     }
 
     // Overridden for better type safety.
