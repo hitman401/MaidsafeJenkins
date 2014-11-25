@@ -14,7 +14,16 @@ public class GithubCheckoutAction extends InvisibleAction {
     
     private String branchTarget;        
     private ShellScript script;
+    private String baseBranch;
 
+    public String getBaseBranch() {
+        return baseBranch;
+    }
+
+    public void setBaseBranch(String baseBranch) {
+        this.baseBranch = baseBranch;
+    }
+        
     public String getBranchTarget() {
         return branchTarget;
     }

@@ -34,7 +34,7 @@ import org.kohsuke.stapler.StaplerRequest;
  * 
  */
 public class MaidsafeJenkinsBuilder extends Builder {
-
+    private final static String BUILDER_NAME = "maidsafe ci builder"; 
     private final String orgName;
     private final String repoSubFolder;
     private final String superProjectName;
@@ -73,10 +73,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
           GitHubHelper submoduleHelper;
           GitHubPullRequestHelper ghprh;          
           final String ISSUE_KEY_PARAM = "issueKey";          
-//          String ORG_NAME = "maidsafe"; // TODO  param from config
-//          String ROOT_REPO = "Maidsafe"; // TODO  param from config
-//          String DEF_BASE_BRANCH = "master"; // TODO  param from config
-//          String superProjName = "MaidSafe"; //TODO params config or via cmd
           String issueKey;
           ShellScript script;
           FilePath rootDir;
@@ -110,6 +106,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
             checkoutAction = submoduleHelper.checkoutModules(pullRequest);
             if (checkoutAction != null) {
                 checkoutAction.setScript(script);
+                checkoutAction.setBaseBranch(defaultBaseBranch);
                 build.addAction(checkoutAction);
             }            
             return checkoutAction != null;                        
@@ -126,7 +123,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
         public void onCompleted(Run r, TaskListener tl) {
             super.onCompleted(r, tl);
             try {
-                String DEL_BRANCH_CMD = "git submodule foreach 'git branch -D %s || : '";
+                String DEL_BRANCH_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
                 GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
                 if (checkoutAction == null) {
                     return;
@@ -134,7 +131,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
                 tl.getLogger().println("Cleaning up the temporary branch " + checkoutAction.getBranchTarget());
                 checkoutAction
                         .getScript()
-                        .run(String.format(DEL_BRANCH_CMD, checkoutAction.getBranchTarget()));
+                        .run(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), checkoutAction.getBranchTarget()));
             } catch (Exception ex) {
                 Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
             }            
@@ -167,10 +164,23 @@ public class MaidsafeJenkinsBuilder extends Builder {
         public FormValidation doCheckOrgName(@QueryParameter String value)
                 throws IOException, ServletException {
             if (value.length() == 0)
-                return FormValidation.error("Please set a organisation name");            
+                return FormValidation.error("Please set organisation name");            
             return FormValidation.ok();
         }
         
+        public FormValidation doCheckSuperProjectName(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please set Super project name");            
+            return FormValidation.ok();
+        }
+        
+        public FormValidation doCheckDefaultBaseBranch(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please set base branch to default while merging target builds");            
+            return FormValidation.ok();
+        }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             // Indicates that this builder can be used with all kinds of project types 
@@ -192,7 +202,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Maidsafe CI Builder";
+            return BUILDER_NAME;
         }        
     }
 
