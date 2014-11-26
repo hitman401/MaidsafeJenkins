@@ -9,9 +9,11 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
 import hudson.util.ArgumentListBuilder;
+
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Date;
+import java.util.List;
 
 /**
  *
@@ -30,18 +32,28 @@ public class ShellScript {
         this.env = envVars;
     }
     
-    //TODO add a random number 
-    public int run(String cmd) throws Exception {
-        return run(cmd, logger);
+    private String convertToString(List<String> cmds) {
+    	StringBuilder builder = new StringBuilder();
+    	for (String cmd : cmds) {
+    		builder.append("echo + " + cmd).append("\n");
+    		builder.append(cmd).append("\n");    		
+    	}
+    	builder.append("exit");
+    	return builder.toString();
     }
-    //TODO convert to list or override with list
-    public int run(String cmd, OutputStream outputStream) throws Exception {        
-        if (outputStream == null) {
-            outputStream = logger;
-        }
-        FilePath tempFile = tempPath.createTempFile("sricpt_"+ new Date().getTime(), launcher.isUnix() ? ".sh" : ".bat");
+    
+    public void execute(List<String> cmds) throws Exception {
+    	execute(cmds, logger);
+    }
+    
+    private void runAsShellCommand(List<String> cmds, OutputStream outputStream) throws Exception {
+    	launcher.launch().cmds(cmds).envs(env).join();
+    }
+    
+    private void runWinBatch(List<String> cmds, OutputStream outputStream) throws Exception {
+    	FilePath tempFile = tempPath.createTempFile("sricpt_"+ new Date().getTime(), launcher.isUnix() ? ".sh" : ".bat");
         OutputStream outStr = tempFile.write();
-        outStr.write(cmd.getBytes());
+        outStr.write(convertToString(cmds).getBytes());
         outStr.flush();
         outStr.close();
         ArgumentListBuilder command = new ArgumentListBuilder();
@@ -52,7 +64,17 @@ public class ShellScript {
         Proc proc = launcher.launch(ps);                        
         proc.join();
         tempFile.delete();
-        return 0;
+    }
+    
+    public void execute(List<String> cmds, OutputStream outputStream) throws Exception{
+    	if (outputStream == null) {
+            outputStream = logger;
+        }
+    	if (launcher.isUnix()) {
+    		runAsShellCommand(cmds, outputStream);
+    	} else {
+    		runWinBatch(cmds, outputStream);
+    	}               
     }
     
 }
