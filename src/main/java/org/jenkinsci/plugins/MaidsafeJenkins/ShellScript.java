@@ -35,22 +35,23 @@ public class ShellScript {
     private String convertToString(List<String> cmds) {
     	StringBuilder builder = new StringBuilder();
     	for (String cmd : cmds) {
-    		builder.append("echo + " + cmd).append("\n");
+    		builder.append("echo + " + cmd + ").append("\n");
     		builder.append(cmd).append("\n");    		
     	}
     	builder.append("exit");
     	return builder.toString();
     }
     
-    public void execute(List<String> cmds) throws Exception {
-    	execute(cmds, logger);
+    public int execute(List<String> cmds) throws Exception {
+    	return execute(cmds, logger);
     }
     
-    private void runAsShellCommand(List<String> cmds, OutputStream outputStream) throws Exception {
-    	launcher.launch().cmds(cmds).envs(env).join();
+    private int runAsShellCommand(List<String> cmds, OutputStream outputStream) throws Exception {
+    	return launcher.launch().cmds(cmds).envs(env).join();
     }
     
-    private void runWinBatch(List<String> cmds, OutputStream outputStream) throws Exception {
+    private int runWinBatch(List<String> cmds, OutputStream outputStream) throws Exception {
+    	int status;
     	FilePath tempFile = tempPath.createTempFile("sricpt_"+ new Date().getTime(), launcher.isUnix() ? ".sh" : ".bat");
         OutputStream outStr = tempFile.write();
         outStr.write(convertToString(cmds).getBytes());
@@ -62,19 +63,22 @@ public class ShellScript {
         ps = ps.cmds(command).stdout(outputStream);
         ps = ps.pwd(tempPath).envs(env);
         Proc proc = launcher.launch(ps);                        
-        proc.join();
+        status = proc.join();
         tempFile.delete();
+        return status;
     }
     
-    public void execute(List<String> cmds, OutputStream outputStream) throws Exception{
+    public int execute(List<String> cmds, OutputStream outputStream) throws Exception {
+    	int status;
     	if (outputStream == null) {
             outputStream = logger;
         }
     	if (launcher.isUnix()) {
-    		runAsShellCommand(cmds, outputStream);
+    		status = runAsShellCommand(cmds, outputStream);
     	} else {
-    		runWinBatch(cmds, outputStream);
-    	}               
+    		status = runWinBatch(cmds, outputStream);
+    	}
+    	return status;
     }
     
 }

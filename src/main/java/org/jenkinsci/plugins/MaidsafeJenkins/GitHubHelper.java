@@ -30,6 +30,7 @@ public class GitHubHelper {
 	private final String SUB_MODULE_UPDATE_CMD = "git submodule foreach 'git checkout %s && git pull'";
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
 	private final String SUPER_PROJ_UPDATE_CMD = "git checkout %s && git pull";
+	private final String HARD_RESET_CMD = "git reset --hard HEAD && git submodule foreach 'git reset --hard HEAD'";
 
 	public GitHubHelper(String superProjectName, FilePath superProject, PrintStream consoleLogger, ShellScript script,
 			String defaultBaseBranch) {
@@ -78,18 +79,29 @@ public class GitHubHelper {
 			consoleLogger.println(ex);
 		}
 	}
-
-	private String backToRootDirFromSubmodule(String submodulePath) {
-		String[] dirs = submodulePath.split("/");
-		StringBuilder command = new StringBuilder("cd ");
-		for (int i = 0; i < dirs.length; i++) {
-			command.append("../");
+	
+	private void doHardReset() {
+		try {
+			List<String> commands = new ArrayList<String>();
+			commands.add(HARD_RESET_CMD);
+			script.execute(commands);
+		} catch(Exception e) {
+			consoleLogger.println(e);
 		}
-		return command.toString();
 	}
+
+//	private String backToRootDirFromSubmodule(String submodulePath) {
+//		String[] dirs = submodulePath.split("/");
+//		StringBuilder command = new StringBuilder("cd ");
+//		for (int i = 0; i < dirs.length; i++) {
+//			command.append("../");
+//		}
+//		return command.toString();
+//	}
 
 	@SuppressWarnings("unchecked")
 	public GithubCheckoutAction checkoutModules(Map<String, Map<String, Object>> prList) throws Exception {
+		int scriptExecutionStatus;
 		String temp = null;
 		GithubCheckoutAction checkoutAction = null;
 		List<String> command = new ArrayList<String>();
@@ -98,17 +110,27 @@ public class GitHubHelper {
 		}
 		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
 		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
+		scriptExecutionStatus = script.execute(command);
+		if (scriptExecutionStatus != 0) {
+			doHardReset();
+			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
+		}
+		consoleLogger.println("Super project and Sub modules were checked out to the " + defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);				
 		Iterator<String> prModules = prList.keySet().iterator();
 		while (prModules.hasNext()) {
+			command = new ArrayList<String>();
 			temp = prModules.next();
 			if (!modulePathMapping.containsKey(temp)) {
 				consoleLogger.println("ERROR :: " + temp + " could not be found. ");
 			}
 			command.add("cd " + modulePathMapping.get(temp));
-			command.addAll(buildPRMergeCommands(prList.get(temp)));
-			command.add(backToRootDirFromSubmodule(modulePathMapping.get(temp)));
-		}
-		script.execute(command);
+			command.addAll(buildPRMergeCommands(prList.get(temp)));			
+			scriptExecutionStatus = script.execute(command);
+			if (scriptExecutionStatus != 0) {
+				doHardReset();
+				throw new Exception("Merge from remote branch has conflicts in module " + temp );
+			}			
+		}			
 		checkoutAction = new GithubCheckoutAction();
 		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());
 		return checkoutAction;
