@@ -33,12 +33,13 @@ public class ShellScript {
     }
     
     private String convertToString(List<String> cmds) {
+    	String echoCmd = "echo \"%s\"\n";
     	StringBuilder builder = new StringBuilder();
     	for (String cmd : cmds) {
-    		builder.append("echo + " + cmd + ").append("\n");
+    		builder.append(String.format(echoCmd, cmd));
     		builder.append(cmd).append("\n");    		
     	}
-    	builder.append("exit");
+    	builder.append("\r\nexit");
     	return builder.toString();
     }
     

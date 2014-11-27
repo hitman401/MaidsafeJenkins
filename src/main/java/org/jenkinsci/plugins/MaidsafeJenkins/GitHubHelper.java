@@ -61,18 +61,16 @@ public class GitHubHelper {
 					submodulesOutput.append((char) b);
 				}
 			};
-			script.execute(commands, outStream);
-			// scan the output from the stream output
+			script.execute(commands, outStream); 
 			scanner = new Scanner(submodulesOutput.toString());
-			modulePathMapping = new HashMap<String, String>();
-			while (scanner.hasNextLine()) {
-				temp = scanner.nextLine();
+			modulePathMapping = new HashMap<String, String>();			
+			while (scanner.hasNextLine()) {				
+				temp = scanner.nextLine();				
 				splittedArray = temp.split(",");
-				if (splittedArray.length != 2) {
-					consoleLogger.println("Invalid character while reading submodules -- grep cmd -- read line :: " + temp);
+				if (splittedArray.length != 2 || splittedArray[0].startsWith("git config --list")) {
 					continue;
-				}
-				modulePathMapping.put(splittedArray[1].toLowerCase(), splittedArray[0]);
+				}				
+				modulePathMapping.put(splittedArray[1].trim().toLowerCase(), splittedArray[0].trim());
 			}
 			consoleLogger.println(modulePathMapping);
 		} catch (Exception ex) {

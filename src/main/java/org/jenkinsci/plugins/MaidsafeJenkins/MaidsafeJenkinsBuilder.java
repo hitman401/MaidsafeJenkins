@@ -21,24 +21,12 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * Sample {@link Builder}.
- *
- * <p>
- * When the user configures the project and enables this builder,
- * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked and a new
- * {@link HelloWorldBuilder} is created. The created instance is persisted to
- * the project configuration XML by using XStream, so this allows you to use
- * instance fields (like {@link #name}) to remember the configuration.
- *
- * <p>
- * When a build is performed, the
- * {@link #perform(AbstractBuild, Launcher, BuildListener)} method will be
- * invoked.
- *
+ * MaidsafeJenkinsBuilder 
+ * Builder provides a easy integration for managing Super project and its corresponding Submodule projects 
  * 
  */
 public class MaidsafeJenkinsBuilder extends Builder {
-	private final static String BUILDER_NAME = "maidsafe ci builder";
+	private final static String BUILDER_NAME = "MAIDSafe CI Builder";
 	private final String orgName;
 	private final String repoSubFolder;
 	private final String superProjectName;
@@ -118,12 +106,20 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
 		}
-		return true;
+		return false;
 	}
 
+	/*
+	 * BuildRunListner provides Callbacks at the build action events.
+	 *  
+	 */
 	@Extension
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
 
+		/**
+		 * When the build run is completed, the temporary branches created are to be deleted.
+		 * 
+		 */
 		@Override
 		public void onCompleted(Run r, TaskListener tl) {
 			super.onCompleted(r, tl);
