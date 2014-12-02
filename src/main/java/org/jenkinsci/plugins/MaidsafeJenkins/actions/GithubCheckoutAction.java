@@ -2,7 +2,7 @@ package org.jenkinsci.plugins.MaidsafeJenkins.actions;
 
 import java.util.HashMap;
 
-import org.jenkinsci.plugins.MaidsafeJenkins.ShellScript;
+import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 

@@ -1,8 +1,10 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <l:layout title="Github Checkout Action">	
     <l:main-panel>
-       	<h1>Finally it worked</h1>
-       	<b>Phew!!!!</b>
+       	<h1>Github Checkout Summary</h1>
+       	<b>Result :&nbsp;&nbsp;</b>
+       	<j:if test="${it.githubCheckoutAction.buildPassed}"><b style="color:green">PASS</b></j:if>   
+       	<j:if test="${!it.githubCheckoutAction.buildPassed}"><b style="color:red">FAILED</b></j:if>       	      	      
 	</l:main-panel>
   	</l:layout>
 </j:jelly>

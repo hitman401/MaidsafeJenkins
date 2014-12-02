@@ -2,17 +2,15 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jenkinsci.plugins.MaidsafeJenkins;
+package org.jenkinsci.plugins.MaidsafeJenkins.util;
 
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
 import hudson.util.ArgumentListBuilder;
-
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
