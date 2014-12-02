@@ -6,16 +6,12 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubPullRequestHelper;
@@ -62,6 +58,20 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		this.superProjectName = superProjectName;
 		this.defaultBaseBranch = defaultBaseBranch;
 	}
+	
+	private void updateCheckoutActionForPR(GithubCheckoutAction action, Map<String, Map<String, Object>> prList) {
+		String module;
+		List<String> urls = new ArrayList<String>();
+		List<String> modules = new ArrayList<String>();
+		Iterator<String> iterator = prList.keySet().iterator();
+		while(iterator.hasNext()) {
+			module = iterator.next();
+			urls.add((String)prList.get(module).get("html_url"));
+			modules.add(module);
+		}
+		action.setMatchingPRList(urls);
+		action.setModulesWithMatchingPR(modules);
+	}
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
@@ -77,7 +87,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		logger = listener.getLogger();			
 		checkoutAction = new GithubCheckoutAction();
 		checkoutAction.setBaseBranch(defaultBaseBranch);	
-//		build.addAction(new CheckoutAction());
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {
@@ -90,6 +99,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				logger.println("Build Stopped -- parameter not present");
 				return false;
 			}
+			checkoutAction.setIssueKey(issueKey);
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
@@ -105,7 +115,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				logger.println("No Matching Pull Request found for " + issueKey);
 				build.addAction(checkoutAction);				
 				return false;
-			}			
+			}
+			updateCheckoutActionForPR(checkoutAction, pullRequest);
 			checkoutAction = submoduleHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
 			checkoutAction.setBaseBranch(defaultBaseBranch);						
@@ -155,7 +166,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	}
 
 	@Extension
-	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+	public static class DescriptorImpl extends  BuildStepDescriptor<Builder> {
 
 		/**
 		 * In order to load the persisted global configuration, you have to call
@@ -164,6 +175,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public DescriptorImpl() {
 			load();
 		}
+			
 
 		/**
 		 * Performs on-the-fly validation of the form field 'name'.

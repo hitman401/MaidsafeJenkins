@@ -11,7 +11,7 @@ public class ActionSummary {
 	private final String BRANCH_TARGET_KEY = "targetBranch";
 	private final String BASE_BRANCH_KEY = "baseBranch";
 	private final String ISSUE_KEY = "issueKey";
-	private final String MATCHIN_PR_LIST_KEY = "matchinPRList";
+	private final String MATCHIN_PR_LIST_KEY = "matchingPRList";
 	private final String BUILD_PASSED_KEY = "buildPassed";
 	private final String REASON_KEY = "failureReason";
 	private final String MODULES_WITH_MATCHING_KEY = "modulesMatchingIssue";	
@@ -51,7 +51,7 @@ public class ActionSummary {
 	}
 
 	public void setReasonForFailure(String reasonForFailure) {
-		summary.put(ISSUE_KEY, reasonForFailure);
+		summary.put(REASON_KEY, reasonForFailure);
 	}
 
 	public String getBaseBranch() {

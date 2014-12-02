@@ -118,7 +118,7 @@ public class GitHubPullRequestHelper {
 
 		default:
 			break;
-		}
+		}		
 		return endPoint.toString();
 	}
 
@@ -126,13 +126,14 @@ public class GitHubPullRequestHelper {
 		logger.println("Fetching PR for " + org + " - " + repo);
 		JSONArray openPrs = null;
 		try {
-			HttpClient client = new HttpClient();
+			HttpClient client = new HttpClient();			
 			GetMethod prListRequest = new GetMethod(prepareURL(org, repo, filter));
+			prListRequest.addRequestHeader("Authorization", "token e4406184e8af3c9768c5ac02977cfdc39e6abe9c"); // TODO change the auth token as param
 			int statusCode = client.executeMethod(prListRequest);
 			if (statusCode != HttpStatus.SC_OK) {
 				return openPrs;
 			}
-			openPrs = (JSONArray) new JSONParser().parse(prListRequest.getResponseBodyAsString());
+			openPrs = (JSONArray) new JSONParser().parse(prListRequest.getResponseBodyAsString());			
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
