@@ -16,6 +16,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
 
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
+
 /**
  *
  * @author krishnakumarp
@@ -27,16 +29,18 @@ public class GitHubHelper {
 	private ShellScript script;
 	private HashMap<String, String> modulePathMapping;
 	private String defaultBaseBranch = "master";
+	private GithubCheckoutAction checkoutAction;
 	private final String SUB_MODULE_UPDATE_CMD = "git submodule foreach 'git checkout %s && git pull'";
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
 	private final String SUPER_PROJ_UPDATE_CMD = "git checkout %s && git pull";
 	private final String HARD_RESET_CMD = "git reset --hard HEAD && git submodule foreach 'git reset --hard HEAD'";
 
 	public GitHubHelper(String superProjectName, FilePath superProject, PrintStream consoleLogger, ShellScript script,
-			String defaultBaseBranch) {
+			String defaultBaseBranch, GithubCheckoutAction checkoutAction) {
 		this.superProject = superProject;
 		this.consoleLogger = consoleLogger;
 		this.script = script;
+		this.checkoutAction = checkoutAction;
 		if (defaultBaseBranch != null && !defaultBaseBranch.isEmpty()) {
 			this.defaultBaseBranch = defaultBaseBranch;
 		}
@@ -67,7 +71,7 @@ public class GitHubHelper {
 			while (scanner.hasNextLine()) {				
 				temp = scanner.nextLine();				
 				splittedArray = temp.split(",");
-				if (splittedArray.length != 2 || splittedArray[0].startsWith("git config --list")) {
+				if (splittedArray.length != 2 || splittedArray[0].contains("git config --list")) {
 					continue;
 				}				
 				modulePathMapping.put(splittedArray[1].trim().toLowerCase(), splittedArray[0].trim());
@@ -88,27 +92,21 @@ public class GitHubHelper {
 		}
 	}
 
-//	private String backToRootDirFromSubmodule(String submodulePath) {
-//		String[] dirs = submodulePath.split("/");
-//		StringBuilder command = new StringBuilder("cd ");
-//		for (int i = 0; i < dirs.length; i++) {
-//			command.append("../");
-//		}
-//		return command.toString();
-//	}
 
 	@SuppressWarnings("unchecked")
 	public GithubCheckoutAction checkoutModules(Map<String, Map<String, Object>> prList) throws Exception {
 		int scriptExecutionStatus;
-		String temp = null;
-		GithubCheckoutAction checkoutAction = null;
+		String temp = null;		
 		List<String> command = new ArrayList<String>();
 		if (prList == null || prList.isEmpty()) {
+			checkoutAction.setBuilPassed(false);
+			checkoutAction.setReasonForFailure("No matching Pull Request found");
 			return checkoutAction;
 		}
 		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
 		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
 		scriptExecutionStatus = script.execute(command);
+		consoleLogger.println("Execution status  ::: " + scriptExecutionStatus);
 		if (scriptExecutionStatus != 0) {
 			doHardReset();
 			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
@@ -126,11 +124,11 @@ public class GitHubHelper {
 			scriptExecutionStatus = script.execute(command);
 			if (scriptExecutionStatus != 0) {
 				doHardReset();
-				throw new Exception("Merge from remote branch has conflicts in module " + temp );
+				checkoutAction.setBuilPassed(false);
+				checkoutAction.setReasonForFailure("Merge from remote branch has conflicts in module " + temp);				
 			}			
-		}			
-		checkoutAction = new GithubCheckoutAction();
-		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());
+		}					
+		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());		
 		return checkoutAction;
 	}
 

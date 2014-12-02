@@ -6,16 +6,13 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -70,7 +67,10 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		ShellScript script;
 		FilePath rootDir;
 		PrintStream logger;
-		logger = listener.getLogger();
+		logger = listener.getLogger();			
+		checkoutAction = new GithubCheckoutAction();
+		checkoutAction.setBaseBranch(defaultBaseBranch);	
+//		build.addAction(new CheckoutAction());
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {
@@ -78,7 +78,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			script = new ShellScript(rootDir, launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
 			issueKey = envVars.get(ISSUE_KEY_PARAM, null);
-			/***********************************/
+			/************************************/
 			if (issueKey == null || issueKey.isEmpty()) {
 				logger.println("Build Stopped -- parameter not present");
 				return false;
@@ -86,28 +86,30 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
-			logger.println("Process initiated for token " + issueKey);
-			submoduleHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch);
+			logger.println("Process initiated for token " + issueKey);			
+			submoduleHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch, checkoutAction);
 			ghprh = new GitHubPullRequestHelper(orgName, submoduleHelper.getModuleNames(), logger);
 			Map<String, Map<String, Object>> pullRequest = ghprh.getMatchingPR(issueKey,
 					GitHubPullRequestHelper.Filter.OPEN,
 					GitHubPullRequestHelper.PR_MATCH_STRATERGY.BRANCH_NAME_STARTS_WITH_IGNORE_CASE);
 			if (pullRequest == null || pullRequest.isEmpty()) {
+				checkoutAction.setBuilPassed(false);
+				checkoutAction.setReasonForFailure("No Matching Pull Request found for " + issueKey);
 				logger.println("No Matching Pull Request found for " + issueKey);
+				build.addAction(checkoutAction);				
 				return false;
-			}
-			checkoutAction = submoduleHelper.checkoutModules(pullRequest);
-			if (checkoutAction != null) {
-				checkoutAction.setScript(script);
-				checkoutAction.setBaseBranch(defaultBaseBranch);
-				build.addAction(checkoutAction);
-			}
-			return checkoutAction != null;
+			}			
+			checkoutAction = submoduleHelper.checkoutModules(pullRequest);						
+			checkoutAction.setScript(script);
+			checkoutAction.setBaseBranch(defaultBaseBranch);						
+			build.addAction(checkoutAction);			
+			return checkoutAction.isBuilPassed();
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
 		}
 		return false;
 	}
+		
 
 	/*
 	 * BuildRunListner provides Callbacks at the build action events.
@@ -117,17 +119,19 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
 
 		/**
-		 * When the build run is completed, the temporary branches created are to be deleted.
-		 * 
+		 * When the build run is completed, the temporary branches created are to be deleted.		 
 		 */
 		@Override
-		public void onCompleted(Run r, TaskListener tl) {
+		public void onCompleted(Run r, TaskListener tl) {		
 			super.onCompleted(r, tl);
 			try {
 				String DEL_BRANCH_CMD = "git checkout %S && git branch -D %s";
 				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
 				if (checkoutAction == null) {
+					return;
+				}
+				if (!checkoutAction.isBuilPassed()) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branch " + checkoutAction.getBranchTarget());

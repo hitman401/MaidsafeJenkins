@@ -12,6 +12,7 @@ import hudson.util.ArgumentListBuilder;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -33,13 +34,12 @@ public class ShellScript {
     }
     
     private String convertToString(List<String> cmds) {
-    	String echoCmd = "echo \"%s\"\n";
+    	String echoCmd = "echo \"+ %s\"\n";
     	StringBuilder builder = new StringBuilder();
     	for (String cmd : cmds) {
     		builder.append(String.format(echoCmd, cmd));
     		builder.append(cmd).append("\n");    		
     	}
-    	builder.append("\r\nexit");
     	return builder.toString();
     }
     
@@ -47,19 +47,17 @@ public class ShellScript {
     	return execute(cmds, logger);
     }
     
-    private int runAsShellCommand(List<String> cmds, OutputStream outputStream) throws Exception {
-    	return launcher.launch().cmds(cmds).envs(env).join();
-    }
+
     
-    private int runWinBatch(List<String> cmds, OutputStream outputStream) throws Exception {
+    private int runCommands(List<String> cmds, OutputStream outputStream) throws Exception {
     	int status;
     	FilePath tempFile = tempPath.createTempFile("sricpt_"+ new Date().getTime(), launcher.isUnix() ? ".sh" : ".bat");
-        OutputStream outStr = tempFile.write();
+        OutputStream outStr = tempFile.write();        
         outStr.write(convertToString(cmds).getBytes());
         outStr.flush();
         outStr.close();
         ArgumentListBuilder command = new ArgumentListBuilder();
-        command.addTokenized("sh --login " + tempFile.getRemote());        
+        command.addTokenized("sh " + (launcher.isUnix() ? "" : "--login ") + tempFile.getRemote());        
         Launcher.ProcStarter ps = launcher.new ProcStarter();
         ps = ps.cmds(command).stdout(outputStream);
         ps = ps.pwd(tempPath).envs(env);
@@ -69,17 +67,11 @@ public class ShellScript {
         return status;
     }
     
-    public int execute(List<String> cmds, OutputStream outputStream) throws Exception {
-    	int status;
+    public int execute(List<String> cmds, OutputStream outputStream) throws Exception {  
     	if (outputStream == null) {
             outputStream = logger;
         }
-    	if (launcher.isUnix()) {
-    		status = runAsShellCommand(cmds, outputStream);
-    	} else {
-    		status = runWinBatch(cmds, outputStream);
-    	}
-    	return status;
+    	return  runCommands(cmds, outputStream);
     }
     
 }
