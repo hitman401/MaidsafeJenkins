@@ -31,6 +31,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String repoSubFolder;
 	private final String superProjectName;
 	private final String defaultBaseBranch;
+	private static String jiraToken;
+	private static String githubToken;
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -105,7 +107,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			script.execute(shellCommands);
 			logger.println("Process initiated for token " + issueKey);			
 			submoduleHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch, checkoutAction);
+			submoduleHelper.setAccessToken(githubToken);
 			ghprh = new GitHubPullRequestHelper(orgName, submoduleHelper.getModuleNames(), logger);
+			ghprh.setAccessToken(githubToken);
 			Map<String, Map<String, Object>> pullRequest = ghprh.getMatchingPR(issueKey,
 					GitHubPullRequestHelper.Filter.OPEN,
 					GitHubPullRequestHelper.PR_MATCH_STRATERGY.BRANCH_NAME_STARTS_WITH_IGNORE_CASE);
@@ -210,18 +214,19 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}
 
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-			// Indicates that this builder can be used with all kinds of project
-			// types
 			return true;
 		}
 
 		@Override
 		public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
-			// To persist global configuration information,
-			// set that to properties and call save().
-			// ^Can also use req.bindJSON(this, formData);
-			// (easier when there are many fields; need set* methods for this,
-			// like setUseFrench)
+			jiraToken = formData.getString("jiraToken");
+			githubToken = formData.getString("githubToken");
+			if (jiraToken != null) {
+				jiraToken = jiraToken.trim();
+			}
+			if (githubToken != null) {
+				githubToken = githubToken.trim();
+			}
 			save();
 			return super.configure(req, formData);
 		}

@@ -22,8 +22,7 @@
 		       			${url}
 		       		</j:forEach>
 	       		</div>
-		    </div>
-	           		     	      	    
+		    </div>	           		     	      	   
 		</l:main-panel>
   	</l:layout>
 </j:jelly>

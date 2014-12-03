@@ -28,6 +28,7 @@ public class GitHubHelper {
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
 	private final String SUPER_PROJ_UPDATE_CMD = "git checkout %s && git pull";
 	private final String HARD_RESET_CMD = "git reset --hard HEAD && git submodule foreach 'git reset --hard HEAD'";
+	private String accessToken;	
 
 	public GitHubHelper(String superProjectName, FilePath superProject, PrintStream consoleLogger, ShellScript script,
 			String defaultBaseBranch, GithubCheckoutAction checkoutAction) {
@@ -74,6 +75,10 @@ public class GitHubHelper {
 		} catch (Exception ex) {
 			consoleLogger.println(ex);
 		}
+	}
+	
+	public void setAccessToken(String token) {
+		accessToken = token;
 	}
 	
 	private void doHardReset() {

@@ -37,13 +37,14 @@ public class GitHubPullRequestHelper {
 	private final String PR_REQUEST = "https://api.github.com/repos/%s/%s/pulls";
 	private final String PR_HEAD_REPO_KEY = "head";
 	private final String PR_BRANCH_KEY = "ref";
+	private String accessToken;
 
 	public GitHubPullRequestHelper(String orgName, List<String> repositories, PrintStream logger) {
 		this.org = orgName;
 		this.repositories = repositories;
 		this.logger = logger;
 	}
-
+	
 	// TODO multi thread the PR requests
 	public Map<String, Map<String, Object>> getMatchingPR(String text, Filter filter, PR_MATCH_STRATERGY stratergy)
 			throws Exception {
@@ -75,6 +76,10 @@ public class GitHubPullRequestHelper {
 			}
 		}
 		return matchingPRForModule;
+	}
+	
+	public void setAccessToken(String token) {
+		accessToken = token;
 	}
 
 	private JSONObject findMatchingPR(String text, PR_MATCH_STRATERGY stratergy, JSONArray prList) throws Exception {
@@ -123,14 +128,17 @@ public class GitHubPullRequestHelper {
 	}
 
 	private JSONArray getPRListFromGithub(String org, String repo, Filter filter) {
-		logger.println("Fetching PR for " + org + " - " + repo);
+		logger.println("Fetching PR from " + org + "/" + repo);
 		JSONArray openPrs = null;
 		try {
 			HttpClient client = new HttpClient();			
 			GetMethod prListRequest = new GetMethod(prepareURL(org, repo, filter));
-			prListRequest.addRequestHeader("Authorization", "token e4406184e8af3c9768c5ac02977cfdc39e6abe9c"); // TODO change the auth token as param
+			if (accessToken != null && accessToken.isEmpty()) {
+				prListRequest.addRequestHeader("Authorization", "token " + accessToken);
+			}
 			int statusCode = client.executeMethod(prListRequest);
 			if (statusCode != HttpStatus.SC_OK) {
+				logger.println("Pull Request API failed with Error Code :: " + statusCode);
 				return openPrs;
 			}
 			openPrs = (JSONArray) new JSONParser().parse(prListRequest.getResponseBodyAsString());			
