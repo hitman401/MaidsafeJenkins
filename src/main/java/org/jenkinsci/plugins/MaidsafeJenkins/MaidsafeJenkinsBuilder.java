@@ -218,14 +218,14 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}
 
 		@Override
-		public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {
-			jiraToken = formData.getString("jiraToken");
-			githubToken = formData.getString("githubToken");
-			if (jiraToken != null) {
-				jiraToken = jiraToken.trim();
-			}
+		public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {			
+			githubToken = formData.getString("githubToken");			
 			if (githubToken != null) {
 				githubToken = githubToken.trim();
+			}
+			jiraToken = formData.getString("jiraToken");
+			if (jiraToken != null) {
+				jiraToken = jiraToken.trim();
 			}
 			save();
 			return super.configure(req, formData);

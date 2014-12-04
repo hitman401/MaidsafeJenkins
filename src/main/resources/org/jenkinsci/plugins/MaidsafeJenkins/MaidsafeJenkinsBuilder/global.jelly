@@ -15,10 +15,19 @@
     <f:entry title="OAuth Access token Github" field="githubToken"
       description="OAuth Acces token for invoking the Github rest api">
       <f:textbox />
-    </f:entry>
-    <f:entry title="OAuth Access token JIRA" field="jiraToken"
-      description="OAuth Acces token for invoking the JIRA rest api">
+    </f:entry>    
+  </f:section>
+  
+  <f:section title="JIRA">
+    <f:entry title="url" field="jiraURL"
+      description="eg, http://localhost:8080/jira">
       <f:textbox />
-    </f:entry>
+    </f:entry>    
+    <f:entry title="Username" field="jiraUsername">
+      <f:textbox />
+    </f:entry>       
+    <f:entry title="Password" field="jiraPassword">
+      <f:password />
+    </f:entry>    
   </f:section>
 </j:jelly>
