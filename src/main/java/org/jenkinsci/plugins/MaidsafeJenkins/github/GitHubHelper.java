@@ -96,12 +96,7 @@ public class GitHubHelper {
 	public GithubCheckoutAction checkoutModules(Map<String, Map<String, Object>> prList) throws Exception {
 		int scriptExecutionStatus;
 		String temp = null;		
-		List<String> command = new ArrayList<String>();
-		if (prList == null || prList.isEmpty()) {
-			checkoutAction.setBuilPassed(false);
-			checkoutAction.setReasonForFailure("No matching Pull Request found");
-			return checkoutAction;
-		}
+		List<String> command = new ArrayList<String>();		
 		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
 		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
 		scriptExecutionStatus = script.execute(command);
@@ -110,7 +105,10 @@ public class GitHubHelper {
 			doHardReset();
 			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
 		}
-		consoleLogger.println("Super project and Sub modules were checked out to the " + defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);				
+		consoleLogger.println("Super project and Sub modules were checked out to the " + defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);
+		if (prList == null || prList.isEmpty()) {			
+			return checkoutAction;
+		}
 		Iterator<String> prModules = prList.keySet().iterator();
 		while (prModules.hasNext()) {
 			command = new ArrayList<String>();
@@ -123,7 +121,7 @@ public class GitHubHelper {
 			scriptExecutionStatus = script.execute(command);
 			if (scriptExecutionStatus != 0) {
 				doHardReset();
-				checkoutAction.setBuilPassed(false);
+				checkoutAction.setBuildPassed(false);
 				checkoutAction.setReasonForFailure("Merge from remote branch has conflicts in module " + temp);				
 			}			
 		}					

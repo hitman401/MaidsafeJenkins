@@ -42,7 +42,7 @@ public class ActionSummary {
 		return (Boolean) summary.get(BUILD_PASSED_KEY);
 	}
 
-	public void setBuilPassed(boolean builPassed) {
+	public void setBuildPassed(boolean builPassed) {
 		summary.put(BUILD_PASSED_KEY, builPassed);
 	}
 

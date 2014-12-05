@@ -21,4 +21,7 @@
   <f:entry title="Default Base Branch" field="defaultBaseBranch">
     <f:textbox />
   </f:entry>
+  <f:entry title="Initialze Only" field="initializer">
+    <f:textbox />
+  </f:entry>
 </j:jelly>

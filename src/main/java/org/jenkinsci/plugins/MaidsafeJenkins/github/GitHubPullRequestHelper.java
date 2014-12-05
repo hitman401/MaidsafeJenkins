@@ -128,7 +128,7 @@ public class GitHubPullRequestHelper {
 	}
 
 	private JSONArray getPRListFromGithub(String org, String repo, Filter filter) {
-		logger.println("Fetching PR from " + org + "/" + repo);
+		logger.println("Fetching PR from " + org + "/" + repo + " " + accessToken);
 		JSONArray openPrs = null;
 		try {
 			HttpClient client = new HttpClient();			
@@ -139,6 +139,7 @@ public class GitHubPullRequestHelper {
 			int statusCode = client.executeMethod(prListRequest);
 			if (statusCode != HttpStatus.SC_OK) {
 				logger.println("Pull Request API failed with Error Code :: " + statusCode);
+				logger.println(prListRequest.getResponseBodyAsString());
 				return openPrs;
 			}
 			openPrs = (JSONArray) new JSONParser().parse(prListRequest.getResponseBodyAsString());			
