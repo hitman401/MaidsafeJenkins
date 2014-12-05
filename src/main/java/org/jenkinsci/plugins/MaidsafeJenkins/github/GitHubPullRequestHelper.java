@@ -34,7 +34,7 @@ public class GitHubPullRequestHelper {
 		NONE, OPEN
 	}
 
-	private final String PR_REQUEST = "https://api.github.com/repos/%s/%s/pulls";
+	private final String PR_REQUEST = "https://api.github.com/repos/%s/%s/pulls?";
 	private final String PR_HEAD_REPO_KEY = "head";
 	private final String PR_BRANCH_KEY = "ref";
 	private String accessToken;
@@ -107,15 +107,12 @@ public class GitHubPullRequestHelper {
 			} else if (matched) {
 				lastMatchedPR = pullRequest;
 			}
-		}
+		}				
 		return lastMatchedPR;
 	}
 
 	private String prepareURL(String org, String repo, Filter filter) {
-		StringBuilder endPoint = new StringBuilder(String.format(PR_REQUEST, org, repo));
-		if (filter != null && filter != Filter.NONE) {
-			endPoint.append("?");
-		}
+		StringBuilder endPoint = new StringBuilder(String.format(PR_REQUEST, org, repo));		
 		switch (filter) {
 		case OPEN:
 			endPoint.append("state=open");
@@ -128,14 +125,15 @@ public class GitHubPullRequestHelper {
 	}
 
 	private JSONArray getPRListFromGithub(String org, String repo, Filter filter) {
-		logger.println("Fetching PR from " + org + "/" + repo + " " + accessToken);
-		JSONArray openPrs = null;
+		logger.println("Fetching PR from " + org + "/" + repo);
+		JSONArray openPrs = null;		
 		try {
-			HttpClient client = new HttpClient();			
-			GetMethod prListRequest = new GetMethod(prepareURL(org, repo, filter));
-			if (accessToken != null && accessToken.isEmpty()) {
-				prListRequest.addRequestHeader("Authorization", "token " + accessToken);
-			}
+			HttpClient client = new HttpClient();						
+			GetMethod prListRequest = new GetMethod(prepareURL(org, repo, filter));			
+			if (accessToken != null && !accessToken.isEmpty()) {
+				prListRequest.addRequestHeader("Authorization", "token " + accessToken);				
+			}			
+			
 			int statusCode = client.executeMethod(prListRequest);
 			if (statusCode != HttpStatus.SC_OK) {
 				logger.println("Pull Request API failed with Error Code :: " + statusCode);
@@ -145,6 +143,7 @@ public class GitHubPullRequestHelper {
 			openPrs = (JSONArray) new JSONParser().parse(prListRequest.getResponseBodyAsString());			
 		} catch (Exception ex) {
 			ex.printStackTrace();
+			logger.println(ex);
 		}
 		return openPrs;
 	}

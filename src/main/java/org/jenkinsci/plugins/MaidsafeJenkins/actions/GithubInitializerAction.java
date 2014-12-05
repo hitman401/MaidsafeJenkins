@@ -26,7 +26,7 @@ public class GithubInitializerAction extends InvisibleAction {
 		return pullRequests;
 	}
 	public void setPullRequests(Map<String, Map<String, Object>> pullRequests) {
-		pullRequests = pullRequests;
+		this.pullRequests = pullRequests;
 	}	
 	
 }

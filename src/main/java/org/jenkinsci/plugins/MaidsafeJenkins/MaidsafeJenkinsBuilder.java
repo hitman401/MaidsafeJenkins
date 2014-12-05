@@ -150,7 +150,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			issueKey = envVars.get(ISSUE_KEY_PARAM, null);		
 			/**************************************/			
 			checkoutAction.setIssueKey(issueKey);
-			checkoutAction.setOrgName(orgName);		
+			checkoutAction.setOrgName(orgName);			
 			initializerAction = getGithubInitializerAction(build);		
 			if (initializerAction == null) {
 				logger.println("Initializer Running for Project");
@@ -159,17 +159,18 @@ public class MaidsafeJenkinsBuilder extends Builder {
 					initializerAction.setPullRequests(getPullRequest(issueKey, initializerAction.getModules(), logger));
 				}
 				build.addAction(initializerAction);
-				if (initializer != null) {
+				if (initializer != null) {					
 					CommitStatus commitStatus = new CommitStatus(orgName, logger);
 					commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl(), "Build triggered");
 					return true;
 				}				
-			}			
+			}
+			build.addAction(checkoutAction);
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
 			logger.println("Process initiated for token " + issueKey);
-			pullRequest = initializerAction.getPullRequests();
+			pullRequest = initializerAction.getPullRequests();			
 			if ((issueKey != null || !issueKey.isEmpty()) && (pullRequest == null || pullRequest.isEmpty())) {				
 				checkoutAction.setBuildPassed(false);
 				checkoutAction.setReasonForFailure("No Matching Pull Request found for " + issueKey);
@@ -181,8 +182,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch, checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);						
-			build.addAction(checkoutAction);			
+			checkoutAction.setBaseBranch(defaultBaseBranch);											
 			return checkoutAction.isBuilPassed();
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
