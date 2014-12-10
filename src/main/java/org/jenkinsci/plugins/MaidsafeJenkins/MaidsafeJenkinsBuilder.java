@@ -4,21 +4,15 @@ import hudson.*;
 import hudson.model.*;
 import hudson.model.AbstractProject;
 import hudson.model.listeners.RunListener;
-import hudson.model.queue.Executables;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
-import org.codehaus.plexus.interpolation.EnvarBasedValueSource;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
@@ -119,13 +113,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	}
 		
 
-	// TODO change flow
-	// if initializer module only then only get SubModules and PRLISt if issueKey is present and create action
-	// if not initializer mode then below cycle
-	// if issueKey is present and if pullRequests are present then merge with default and pr
-	// if issueKey is present and if pullRequests are not present then merge with default and pr
-	// if issueKey is present then first check the parent for Action GithubPRAction if null then collect PR locally
-	// if issueKey is not present checkout data and proceed normally
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {		
 		EnvVars envVars;

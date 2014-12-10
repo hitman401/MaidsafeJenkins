@@ -43,8 +43,7 @@ public class GithubCheckoutResultAggregator extends Publisher  {
 	private HashMap<String, Object> aggregateBuildResults(List<AbstractBuild<?, ?>> triggeredBuilds) {
 		buildResult = Result.SUCCESS;
 		HashMap<String, Object> buildCheckoutAction;		
-		final String BUILD_NAME = "%s #%d";	
-		System.out.println("Triggered Builds :: " + triggeredBuilds.size());
+		final String BUILD_NAME = "%s #%d";			
 		buildCheckoutAction = new HashMap<String, Object>();
 		for (AbstractBuild<?, ?> build : triggeredBuilds) {
 			if (build.getAction(GithubCheckoutAction.class) != null) {
@@ -67,8 +66,7 @@ public class GithubCheckoutResultAggregator extends Publisher  {
 		AggregatedCheckoutSummaryAction checkoutAction;
 		CommitStatus commitStatus;
 		List<AbstractBuild<?, ?>> triggeredBuilds = new ArrayList<AbstractBuild<?,?>>();
-		for (Action action : build.getActions()) {
-			listener.getLogger().println(action.getClass());
+		for (Action action : build.getActions()) {			
 			if (action instanceof BuildInfoExporterAction) {
 				triggeredBuilds =  ((BuildInfoExporterAction) action).getTriggeredBuilds();
 				break;
