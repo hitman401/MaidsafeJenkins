@@ -152,7 +152,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				}
 				build.addAction(initializerAction);							
 			}
-			if (initializer != null) {					
+			if (initializer != null && initializer.equals("true")) { // TODO change it as boolean					
 				CommitStatus commitStatus = new CommitStatus(orgName, logger);
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;

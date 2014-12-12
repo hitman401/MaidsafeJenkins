@@ -44,9 +44,7 @@ public class ShellScript {
     public int execute(List<String> cmds) throws Exception {
     	return execute(cmds, logger);
     }
-    
-
-    
+       
     private int runCommands(List<String> cmds, OutputStream outputStream) throws Exception {
     	int status;
     	FilePath tempFile = tempPath.createTempFile("sricpt_"+ new Date().getTime(), launcher.isUnix() ? ".sh" : ".bat");

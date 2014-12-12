@@ -58,10 +58,10 @@ public class GitHubHelper {
 			OutputStream outStream = new OutputStream() {
 
 				@Override
-				public void write(int b) throws IOException {	
-					System.out.print((char) b);
+				public void write(int b) throws IOException {					
 					submodulesOutput.append((char) b);
 				}
+				
 			};
 			script.execute(commands, outStream); 
 			scanner = new Scanner(submodulesOutput.toString());
@@ -108,7 +108,8 @@ public class GitHubHelper {
 			doHardReset();
 			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
 		}
-		consoleLogger.println("Super project and Sub modules were checked out to the " + defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);
+		consoleLogger.println("Super project and Sub modules were checked out to the " +
+				defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);
 		if (prList == null || prList.isEmpty()) {			
 			return checkoutAction;
 		}

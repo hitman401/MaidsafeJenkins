@@ -56,8 +56,7 @@ public class GithubCheckoutAction extends ActionSummary implements Action {
 		public void setOrgName(String orgName) {
 			this.orgName = orgName;
 		}
-		
-		@Exported
+				
 		public Map<String, Map<String, Object>> getActualPRList() {
 			return actualPRList;
 		}
