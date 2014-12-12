@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.MaidsafeJenkins.github;
 
+import groovy.json.JsonBuilder;
+
 public class CommitStatusPayload {
 	private String state;
 	private String target_url;
@@ -29,6 +31,11 @@ public class CommitStatusPayload {
 	}
 	public void setContext(String context) {
 		this.context = context;
+	}
+	
+	@Override
+	public String toString() {	
+		return new JsonBuilder(this).toPrettyString();
 	}
 		
 }

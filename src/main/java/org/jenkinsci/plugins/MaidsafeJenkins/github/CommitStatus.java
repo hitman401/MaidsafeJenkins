@@ -15,6 +15,15 @@ public class CommitStatus {
 	private final String END_POINT = "https://api.github.com/repos/%s/%s/statuses/%s";
 	private JenkinsLocationConfiguration locationConfig = new JenkinsLocationConfiguration();
 	
+	private final String SUCCESS_DESCRIPTION = "Build succeeded. Good to merge.";
+	private final String FAILURE_DESCRIPTION = "Build failed. Check the CI build for more information";
+	private final String PENDING_DESCRIPTION = "Build triggered in CI machine";
+	
+	private final String SUCCESS_STATE_STRING = "success";
+	private final String FAILURE_STATE_STRING = "failure";
+	private final String PENDING_STATE_STRING = "pending";
+	
+	
 	public enum State {
 		PENDING, SUCCESS, FAILURE
 	}
@@ -28,20 +37,36 @@ public class CommitStatus {
 		accessToken = token;
 	}
 	
-	private String getStateText(State state) {
-		String stateText = null;
+	private String getDefaultDescription(State state) {
+		String description;
 		switch (state) {
 			case SUCCESS:
-				stateText = "success";
+				description = SUCCESS_DESCRIPTION;
 				break;
 				
 			case FAILURE:
-				stateText = "failure";
+				description = FAILURE_DESCRIPTION;
+				break;
+				
+			default:
+				description = PENDING_DESCRIPTION;				
+		}
+		return description;
+	}
+	
+	private String getStateText(State state) {
+		String stateText;
+		switch (state) {
+			case SUCCESS:
+				stateText = SUCCESS_STATE_STRING;
+				break;
+				
+			case FAILURE:
+				stateText = FAILURE_STATE_STRING;
 				break;	
 				
 			default:			
-				stateText = "pending";
-				break;
+				stateText = PENDING_STATE_STRING;				
 		}
 		return stateText;
 	}
@@ -53,6 +78,10 @@ public class CommitStatus {
 		payload.setTarget_url(locationConfig.getUrl() + buildRefUrl);
 		payload.setState(getStateText(status));
 		return payload;
+	}
+	
+	public void updateAll(Map<String, Map<String, Object>> pullRequests, State state, String buildRefUrl) {			
+		updateAll(pullRequests, state, buildRefUrl , getDefaultDescription(state));
 	}
 	
 	public void updateAll(Map<String, Map<String, Object>> pullRequests, State state, String buildRefUrl, String description) {

@@ -5,11 +5,18 @@ import java.util.Map;
 import hudson.model.InvisibleAction;
 
 public class GithubInitializerAction extends InvisibleAction {
-
+	
+	private String orgName;
 	private String oauthAccessToken;
 	private List<String> modules;
 	private Map<String, Map<String, Object>> pullRequests;	
 	
+	public String getOrgName() {
+		return orgName;
+	}
+	public void setOrgName(String orgName) {
+		this.orgName = orgName;
+	}
 	public String getOauthAccessToken() {
 		return oauthAccessToken;
 	}

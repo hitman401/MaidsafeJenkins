@@ -24,6 +24,7 @@ public class GitHubHelper {
 	private HashMap<String, String> modulePathMapping;
 	private String defaultBaseBranch = "master";
 	private GithubCheckoutAction checkoutAction;
+	private final String SUM_MODULE_INIT_CMD = "git submodule init";
 	private final String SUB_MODULE_UPDATE_CMD = "git submodule foreach 'git checkout %s && git pull'";
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
 	private final String SUPER_PROJ_UPDATE_CMD = "git checkout %s && git pull";
@@ -50,13 +51,15 @@ public class GitHubHelper {
 		try {
 			final StringBuilder submodulesOutput = new StringBuilder();
 			List<String> commands = new ArrayList<String>();
+			commands.add(SUM_MODULE_INIT_CMD);
 			commands.add(SUBMOD_GREP_CMD);
 			// Creating a temporary output stream to get the execution data
 			// Would be cheaper that to pipe it to a file and read it later
 			OutputStream outStream = new OutputStream() {
 
 				@Override
-				public void write(int b) throws IOException {
+				public void write(int b) throws IOException {	
+					System.out.print((char) b);
 					submodulesOutput.append((char) b);
 				}
 			};

@@ -9,5 +9,5 @@
     Creates a text field that shows the value of the "name" property.
     When submitted, it will be passed to the corresponding constructor parameter.
   -->
-  <h2>Aggregates build results of the project</h2>
+  <h2>Commit Status</h2>
 </j:jelly>

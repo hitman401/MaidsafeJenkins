@@ -52,6 +52,10 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public String getSuperProjectName() {
 		return superProjectName;
 	}
+	
+	public String getInitializer() {
+		return initializer;
+	}
 
 	// Fields in config.jelly must match the parameter names in the
 	// "DataBoundConstructor"
@@ -140,17 +144,18 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			checkoutAction.setOrgName(orgName);			
 			initializerAction = getGithubInitializerAction(build);		
 			if (initializerAction == null) {
-				logger.println("Initializer Running for Project");
+				logger.println("Initializer Running for Project");				
 				initializerAction = getInitalizer(rootDir, logger, script, checkoutAction);
+				initializerAction.setOrgName(orgName);
 				if (issueKey != null && !issueKey.isEmpty()) {
 					initializerAction.setPullRequests(getPullRequest(issueKey, initializerAction.getModules(), logger));
 				}
-				build.addAction(initializerAction);
-				if (initializer != null) {					
-					CommitStatus commitStatus = new CommitStatus(orgName, logger);
-					commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl(), "Build triggered");
-					return true;
-				}				
+				build.addAction(initializerAction);							
+			}
+			if (initializer != null) {					
+				CommitStatus commitStatus = new CommitStatus(orgName, logger);
+				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
+				return true;
 			}
 			build.addAction(checkoutAction);
 			List<String> shellCommands = new ArrayList<String>();
@@ -189,16 +194,13 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		 * When the build run is completed, the temporary branches created are to be deleted.		 
 		 */
 		@Override
-		public void onCompleted(Run r, TaskListener tl) {		
+		public void onCompleted(Run r, TaskListener tl) {			
 			super.onCompleted(r, tl);
 			try {
 				String DEL_BRANCH_CMD = "git checkout %S && git branch -D %s";
 				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
-				if (checkoutAction == null) {
-					return;
-				}
-				if (!checkoutAction.isBuilPassed()) {
+				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branch " + checkoutAction.getBranchTarget());
