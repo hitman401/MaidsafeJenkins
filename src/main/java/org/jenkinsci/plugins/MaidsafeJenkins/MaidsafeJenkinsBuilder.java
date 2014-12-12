@@ -34,8 +34,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String orgName;
 	private final String repoSubFolder;
 	private final String superProjectName;
-	private final String defaultBaseBranch;
-	private final String initializer;
+	private final String defaultBaseBranch;	
+	private final boolean updateCommitStatusToPending;
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -51,35 +51,41 @@ public class MaidsafeJenkinsBuilder extends Builder {
 
 	public String getSuperProjectName() {
 		return superProjectName;
-	}
+	}	
 	
-	public String getInitializer() {
-		return initializer;
+	public boolean getUpdateCommitStatusToPending() {
+		return updateCommitStatusToPending;
 	}
 
 	// Fields in config.jelly must match the parameter names in the
 	// "DataBoundConstructor"
 	@DataBoundConstructor
 	public MaidsafeJenkinsBuilder(String orgName, String repoSubFolder, String superProjectName,
-			String defaultBaseBranch, String initializer) {
+			String defaultBaseBranch, boolean updateCommitStatusToPending) {
 		this.orgName = orgName;
 		this.repoSubFolder = repoSubFolder;		
 		this.superProjectName = superProjectName;
-		this.defaultBaseBranch = defaultBaseBranch;	
-		this.initializer = initializer;
+		this.defaultBaseBranch = defaultBaseBranch;			
+		this.updateCommitStatusToPending = updateCommitStatusToPending;
 	}
+	
 	
 	private void updateCheckoutActionForPR(GithubCheckoutAction action, Map<String, Map<String, Object>> prList) {
 		String module;
-		List<String> urls = new ArrayList<String>();
-		List<String> modules = new ArrayList<String>();
-		Iterator<String> iterator = prList.keySet().iterator();
-		while(iterator.hasNext()) {
-			module = iterator.next();
-			urls.add((String)prList.get(module).get("html_url"));
-			modules.add(module);
-		}
-		action.setMatchingPRList(urls);
+		Iterator<String> iterator;
+		List<String> urls;
+		List<String> modules;
+		modules = new ArrayList<String>();
+		urls = new ArrayList<String>();
+		if (prList != null) {
+			iterator = prList.keySet().iterator();
+			while(iterator.hasNext()) {
+				module = iterator.next();
+				urls.add((String)prList.get(module).get("html_url"));
+				modules.add(module);
+			}
+		}		
+		action.setMatchingPRList(urls);	
 		action.setModulesWithMatchingPR(modules);
 		action.setActualPRList(prList);
 	}
@@ -138,8 +144,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			envVars = build.getEnvironment(listener);
 			script = new ShellScript(rootDir, launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
-			issueKey = envVars.get(ISSUE_KEY_PARAM, null);		
-			/**************************************/			
+			issueKey = envVars.get(ISSUE_KEY_PARAM, "").trim();		
+			/**************************************/				
 			checkoutAction.setIssueKey(issueKey);
 			checkoutAction.setOrgName(orgName);			
 			initializerAction = getGithubInitializerAction(build);		
@@ -147,12 +153,12 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				logger.println("Initializer Running for Project");				
 				initializerAction = getInitalizer(rootDir, logger, script, checkoutAction);
 				initializerAction.setOrgName(orgName);
-				if (issueKey != null && !issueKey.isEmpty()) {
+				if (!issueKey.isEmpty()) {
 					initializerAction.setPullRequests(getPullRequest(issueKey, initializerAction.getModules(), logger));
 				}
 				build.addAction(initializerAction);							
 			}
-			if (initializer != null && initializer.equals("true")) { // TODO change it as boolean					
+			if (updateCommitStatusToPending) {					
 				CommitStatus commitStatus = new CommitStatus(orgName, logger);
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
@@ -163,7 +169,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			script.execute(shellCommands);
 			logger.println("Process initiated for token " + issueKey);
 			pullRequest = initializerAction.getPullRequests();			
-			if ((issueKey != null || !issueKey.isEmpty()) && (pullRequest == null || pullRequest.isEmpty())) {				
+			if (!issueKey.isEmpty() && (pullRequest == null || pullRequest.isEmpty())) {				
 				checkoutAction.setBuildPassed(false);
 				checkoutAction.setReasonForFailure("No Matching Pull Request found for " + issueKey);
 				logger.println("No Matching Pull Request found for " + issueKey);
@@ -178,6 +184,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			return checkoutAction.isBuilPassed();
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
+			exception.printStackTrace();
 		}
 		return false;
 	}
