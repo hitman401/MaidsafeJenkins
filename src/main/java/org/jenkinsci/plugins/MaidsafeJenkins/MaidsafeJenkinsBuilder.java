@@ -7,16 +7,12 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.IssueKeyBadge;
@@ -28,6 +24,7 @@ import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
 
 /**
  * MaidsafeJenkinsBuilder 
@@ -41,6 +38,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String superProjectName;
 	private final String defaultBaseBranch;	
 	private final boolean updateCommitStatusToPending;
+	private final String DESCRIPTION = "Build was triggered for Issue Key %s";
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -164,6 +162,13 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				}
 				build.addAction(initializerAction);							
 			}
+			if (!issueKey.isEmpty()) {
+				logger.println("Process initiated for token #" + issueKey);
+				issueKeyBadge = new IssueKeyBadge();
+				issueKeyBadge.setIssueKey(issueKey);
+				build.addAction(issueKeyBadge);
+				build.setDescription(String.format(DESCRIPTION, issueKey));
+			}		
 			if (updateCommitStatusToPending) {					
 				CommitStatus commitStatus = new CommitStatus(orgName, logger);
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
@@ -172,13 +177,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			build.addAction(checkoutAction);
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
-			script.execute(shellCommands);
-			if (!issueKey.isEmpty()) {
-				logger.println("Process initiated for token " + issueKey);
-				issueKeyBadge = new IssueKeyBadge();
-				issueKeyBadge.setIssueKey(issueKey);
-				build.addAction(issueKeyBadge);
-			}			
+			script.execute(shellCommands);			
 			pullRequest = initializerAction.getPullRequests();			
 			if (!issueKey.isEmpty() && (pullRequest == null || pullRequest.isEmpty())) {				
 				checkoutAction.setBuildPassed(false);
@@ -219,6 +218,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				String DEL_BRANCH_CMD = "git checkout %S && git branch -D %s";
 				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
+		
 				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
