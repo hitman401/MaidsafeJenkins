@@ -7,14 +7,19 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.IssueKeyBadge;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
@@ -129,6 +134,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		GithubCheckoutAction checkoutAction;
 		GithubInitializerAction initializerAction = null;
 		GitHubHelper githubHelper;
+		IssueKeyBadge issueKeyBadge;
 		Map<String, Map<String, Object>> pullRequest;
 		final String ISSUE_KEY_PARAM = "issueKey";
 		String issueKey;
@@ -136,7 +142,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		FilePath rootDir;
 		PrintStream logger;
 		logger = listener.getLogger();
-		checkoutAction = new GithubCheckoutAction();
+		checkoutAction = new GithubCheckoutAction();		
 		checkoutAction.setBaseBranch(defaultBaseBranch);	
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
 		logger.println("Git REPO :: " + rootDir.getRemote());
@@ -167,7 +173,12 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
-			logger.println("Process initiated for token " + issueKey);
+			if (!issueKey.isEmpty()) {
+				logger.println("Process initiated for token " + issueKey);
+				issueKeyBadge = new IssueKeyBadge();
+				issueKeyBadge.setIssueKey(issueKey);
+				build.addAction(issueKeyBadge);
+			}			
 			pullRequest = initializerAction.getPullRequests();			
 			if (!issueKey.isEmpty() && (pullRequest == null || pullRequest.isEmpty())) {				
 				checkoutAction.setBuildPassed(false);
@@ -177,7 +188,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				return false;
 			}			
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
-			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch, checkoutAction);
+			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script,
+					defaultBaseBranch, checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
 			checkoutAction.setBaseBranch(defaultBaseBranch);											
@@ -263,7 +275,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public FormValidation doCheckDefaultBaseBranch(@QueryParameter String value) throws IOException,
 				ServletException {
 			if (value.length() == 0)
-				return FormValidation.error("Please set base branch to default while merging target builds");
+				return FormValidation.error("Please set default base branch");
 			return FormValidation.ok();
 		}
 
