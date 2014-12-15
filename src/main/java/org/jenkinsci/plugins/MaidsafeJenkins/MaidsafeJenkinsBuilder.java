@@ -2,20 +2,22 @@ package org.jenkinsci.plugins.MaidsafeJenkins;
 
 import hudson.*;
 import hudson.model.*;
-import hudson.model.AbstractProject;
 import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
-import org.jenkinsci.plugins.MaidsafeJenkins.actions.IssueKeyBadge;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
@@ -24,6 +26,8 @@ import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import com.thoughtworks.xstream.converters.extended.EncodedByteArrayConverter;
 
 
 /**
@@ -37,8 +41,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String repoSubFolder;
 	private final String superProjectName;
 	private final String defaultBaseBranch;	
-	private final boolean updateCommitStatusToPending;
-	private final String DESCRIPTION = "Build was triggered for Issue Key %s";
+	private final boolean updateCommitStatusToPending;	
+	private static FilePath affetcedSubmoduleFile;
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -124,6 +128,24 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}		
 		return action;
 	}
+	
+	private void createAffectedSubmoduleFile(FilePath workspace, List<String> modules) {
+		StringBuilder builder = null;
+		try {
+			affetcedSubmoduleFile = workspace.createTempDir("affected_module", ".csv");
+			for (String module : modules) {
+				if (builder == null) {
+					builder = new StringBuilder();
+				} else {
+					builder.append(",");
+				}
+				builder.append(module);
+			}
+			affetcedSubmoduleFile.write(builder.toString(), "UTF-16");
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 		
 
 	@Override
@@ -132,7 +154,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		GithubCheckoutAction checkoutAction;
 		GithubInitializerAction initializerAction = null;
 		GitHubHelper githubHelper;
-		IssueKeyBadge issueKeyBadge;
 		Map<String, Map<String, Object>> pullRequest;
 		final String ISSUE_KEY_PARAM = "issueKey";
 		String issueKey;
@@ -145,7 +166,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {			
-			envVars = build.getEnvironment(listener);
+			envVars = build.getEnvironment(listener);			
+			envVars.put("MAIDSAFE_MODULES", "Sample Value");
 			script = new ShellScript(rootDir, launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
 			issueKey = envVars.get(ISSUE_KEY_PARAM, "").trim();		
@@ -164,17 +186,16 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			}
 			if (!issueKey.isEmpty()) {
 				logger.println("Process initiated for token #" + issueKey);
-				issueKeyBadge = new IssueKeyBadge();
-				issueKeyBadge.setIssueKey(issueKey);
-				build.addAction(issueKeyBadge);
-				build.setDescription(String.format(DESCRIPTION, issueKey));
+				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
 			}		
 			if (updateCommitStatusToPending) {					
 				CommitStatus commitStatus = new CommitStatus(orgName, logger);
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
 			}
-			build.addAction(checkoutAction);
+			if (build.getActions(GithubCheckoutAction.class) == null) {
+				build.addAction(checkoutAction);
+			}			
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);			
@@ -191,13 +212,14 @@ public class MaidsafeJenkinsBuilder extends Builder {
 					defaultBaseBranch, checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);											
+			checkoutAction.setBaseBranch(defaultBaseBranch);
+			createAffectedSubmoduleFile(rootDir, checkoutAction.getModulesWithMatchingPR());
 			return checkoutAction.isBuilPassed();
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
 		}
-		return false;
+		return true;
 	}
 		
 
@@ -228,6 +250,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
 						checkoutAction.getBranchTarget()));
 				checkoutAction.getScript().execute(cmds);
+				affetcedSubmoduleFile.delete();
 			} catch (Exception ex) {
 				Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
 			}
