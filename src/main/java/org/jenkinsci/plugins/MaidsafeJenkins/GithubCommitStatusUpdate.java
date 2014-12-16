@@ -43,7 +43,7 @@ public class GithubCommitStatusUpdate extends Publisher {
 			return true;
 		}
 		
-		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger);
+		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger, initializerAction.isTestingMode());
 		commitStatusApi.setAccessToken(initializerAction.getOauthAccessToken());
 		commitStatusApi.updateAll(initializerAction.getPullRequests(), 
 				build.getResult() == Result.SUCCESS ? State.SUCCESS : State.FAILURE, build.getUrl());	

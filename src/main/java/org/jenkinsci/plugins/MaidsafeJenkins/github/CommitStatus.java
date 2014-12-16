@@ -23,14 +23,17 @@ public class CommitStatus {
 	private final String FAILURE_STATE_STRING = "failure";
 	private final String PENDING_STATE_STRING = "pending";
 	
+	private boolean testingMode;
+	
 	
 	public enum State {
 		PENDING, SUCCESS, FAILURE
 	}
 	
-	public CommitStatus(String orgName, PrintStream logger) {
+	public CommitStatus(String orgName, PrintStream logger, boolean testingMode) {
 		this.orgName = orgName;
 		this.logger = logger;
+		this.testingMode = testingMode;
 	}
 	
 	public void setAccessToken(String token) {
@@ -107,8 +110,12 @@ public class CommitStatus {
 	
 	public void update(String repo, String sha, State status, String buildRefUrl, String description , String context) {
 		CommitStatusPayload payload = getPayload(status, buildRefUrl, description, context);
-		logger.println("URL :: " +  String.format(END_POINT, orgName, repo, sha));
-		logger.println("Post Data :: " +  payload);
+		if (testingMode) {
+			logger.println("URL :: " +  String.format(END_POINT, orgName, repo, sha));
+			logger.println("Post Data :: " +  payload);
+			return;
+		}		
+		logger.println("Commit Status HTTP integartion");		
 	}
 	
 }

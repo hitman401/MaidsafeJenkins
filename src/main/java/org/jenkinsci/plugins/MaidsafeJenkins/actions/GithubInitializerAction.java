@@ -10,7 +10,14 @@ public class GithubInitializerAction extends InvisibleAction {
 	private String oauthAccessToken;
 	private List<String> modules;
 	private Map<String, Map<String, Object>> pullRequests;	
+	private boolean testingMode;
 	
+	public boolean isTestingMode() {
+		return testingMode;
+	}
+	public void setTestingMode(boolean testingMode) {
+		this.testingMode = testingMode;
+	}
 	public String getOrgName() {
 		return orgName;
 	}

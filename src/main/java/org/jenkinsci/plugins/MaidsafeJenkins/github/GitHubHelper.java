@@ -129,7 +129,7 @@ public class GitHubHelper {
 				checkoutAction.setReasonForFailure("Merge from remote branch has conflicts in module " + temp);				
 			}			
 		}					
-		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());		
+		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());	
 		return checkoutAction;
 	}
 

@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.MaidsafeJenkins;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import hudson.scm.ChangeLogSet.AffectedFile;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -41,8 +42,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String repoSubFolder;
 	private final String superProjectName;
 	private final String defaultBaseBranch;	
-	private final boolean updateCommitStatusToPending;	
-	private static FilePath affetcedSubmoduleFile;
+	private final boolean updateCommitStatusToPending;
+	private final boolean testingMode;
+	private static File affetcedSubmoduleFile;
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -63,17 +65,22 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public boolean getUpdateCommitStatusToPending() {
 		return updateCommitStatusToPending;
 	}
+	
+	public boolean getTestingMode() {
+		return testingMode;
+	}
 
 	// Fields in config.jelly must match the parameter names in the
 	// "DataBoundConstructor"
 	@DataBoundConstructor
 	public MaidsafeJenkinsBuilder(String orgName, String repoSubFolder, String superProjectName,
-			String defaultBaseBranch, boolean updateCommitStatusToPending) {
+			String defaultBaseBranch, boolean updateCommitStatusToPending, boolean testingMode) {
 		this.orgName = orgName;
 		this.repoSubFolder = repoSubFolder;		
 		this.superProjectName = superProjectName;
 		this.defaultBaseBranch = defaultBaseBranch;			
 		this.updateCommitStatusToPending = updateCommitStatusToPending;
+		this.testingMode = testingMode;
 	}
 	
 	
@@ -106,7 +113,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		githubHelper = new GitHubHelper(superProjectName, projectPath, logger, script, defaultBaseBranch, checkoutAction);
 		githubHelper.setAccessToken(getDescriptor().getGithubToken());		
 		initializerAction.setOauthAccessToken(getDescriptor().getGithubToken());
-		initializerAction.setModules(githubHelper.getModuleNames());		
+		initializerAction.setModules(githubHelper.getModuleNames());	
+		initializerAction.setTestingMode(testingMode);
 		return initializerAction;
 	}
 	
@@ -129,19 +137,25 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		return action;
 	}
 	
-	private void createAffectedSubmoduleFile(FilePath workspace, List<String> modules) {
+	private void createAffectedSubmoduleFile(FilePath workspace, List<String> modules, int buildNo) {
 		StringBuilder builder = null;
 		try {
-			affetcedSubmoduleFile = workspace.createTempDir("affected_module", ".csv");
+			FileWriter writer;
+			affetcedSubmoduleFile = new File(workspace.toURI().getPath() + File.separator + "modules.prop" );
 			for (String module : modules) {
 				if (builder == null) {
-					builder = new StringBuilder();
+					builder = new StringBuilder("BUILD_NO#=" + buildNo);
+					builder.append("\n");
+					builder.append("MODULES=");
 				} else {
 					builder.append(",");
 				}
 				builder.append(module);
 			}
-			affetcedSubmoduleFile.write(builder.toString(), "UTF-16");
+			writer = new FileWriter(affetcedSubmoduleFile);			
+			writer.write(builder.toString());
+			writer.flush();
+			writer.close();
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -166,8 +180,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {			
-			envVars = build.getEnvironment(listener);			
-			envVars.put("MAIDSAFE_MODULES", "Sample Value");
+			envVars = build.getEnvironment(listener);						
 			script = new ShellScript(rootDir, launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
 			issueKey = envVars.get(ISSUE_KEY_PARAM, "").trim();		
@@ -189,7 +202,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
 			}		
 			if (updateCommitStatusToPending) {					
-				CommitStatus commitStatus = new CommitStatus(orgName, logger);
+				CommitStatus commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode());
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
 			}
@@ -206,20 +219,20 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				logger.println("No Matching Pull Request found for " + issueKey);
 				build.addAction(checkoutAction);				
 				return false;
-			}			
+			}				
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
 			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script,
 					defaultBaseBranch, checkoutAction);
+			createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);
-			createAffectedSubmoduleFile(rootDir, checkoutAction.getModulesWithMatchingPR());
+			checkoutAction.setBaseBranch(defaultBaseBranch);			
 			return checkoutAction.isBuilPassed();
 		} catch (Exception exception) {
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
 		}
-		return true;
+		return false;
 	}
 		
 
@@ -250,7 +263,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
 						checkoutAction.getBranchTarget()));
 				checkoutAction.getScript().execute(cmds);
-				affetcedSubmoduleFile.delete();
+				//affetcedSubmoduleFile.delete();
 			} catch (Exception ex) {
 				Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
 			}
