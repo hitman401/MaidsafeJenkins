@@ -1,12 +1,11 @@
 package org.jenkinsci.plugins.MaidsafeJenkins.actions;
 
+
 import java.util.HashMap;
 import java.util.Map;
-
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-
 import hudson.Functions;
 import hudson.model.Action;
 import hudson.model.Api;
@@ -16,7 +15,8 @@ public class GithubCheckoutAction extends ActionSummary implements Action {
 	  private final String DISPLAY_NAME = "Github Checkout Summary"; 
 	    private final String URL = "checkoutSummary";
 	    private final String ICON = Functions.getResourcePath() + "/plugin/MaidsafeJenkins/icons/octocat.jpg";    
-	    private ShellScript script;
+	    
+	    private transient ShellScript script;
 	    private String orgName;
 	    private Map<String, Map<String, Object>> actualPRList;
 	    
