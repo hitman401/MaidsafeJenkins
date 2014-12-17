@@ -12,6 +12,8 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.ParametersAction;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
@@ -35,7 +37,10 @@ public class GithubCommitStatusUpdate extends Publisher {
 		GithubInitializerAction initializerAction;
 		CommitStatus commitStatusApi;
 		PrintStream logger;
-		logger = listener.getLogger();
+		logger = listener.getLogger();		
+		for (Action action : build.getActions()) {
+			listener.getLogger().println(action.getClass());
+		}
 		
 		initializerAction = build.getAction(GithubInitializerAction.class);
 		if (initializerAction == null) {
@@ -46,7 +51,7 @@ public class GithubCommitStatusUpdate extends Publisher {
 		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger, initializerAction.isTestingMode());
 		commitStatusApi.setAccessToken(initializerAction.getOauthAccessToken());
 		commitStatusApi.updateAll(initializerAction.getPullRequests(), 
-				build.getResult() == Result.SUCCESS ? State.SUCCESS : State.FAILURE, build.getUrl());	
+				build.getResult() == Result.SUCCESS ? State.SUCCESS : State.FAILURE, build.getUrl(), initializerAction.getFailureReason());	
 		return true;
 	}
 	

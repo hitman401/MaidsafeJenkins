@@ -15,7 +15,7 @@ import hudson.model.Api;
 public class GithubCheckoutAction extends ActionSummary implements Action {
 	  private final String DISPLAY_NAME = "Github Checkout Summary"; 
 	    private final String URL = "checkoutSummary";
-	    private final String ICON = Functions.getResourcePath() + "/plugin/MaidsafeJenkins/icons/git-32x32.png";    
+	    private final String ICON = Functions.getResourcePath() + "/plugin/MaidsafeJenkins/icons/octocat.jpg";    
 	    private ShellScript script;
 	    private String orgName;
 	    private Map<String, Map<String, Object>> actualPRList;

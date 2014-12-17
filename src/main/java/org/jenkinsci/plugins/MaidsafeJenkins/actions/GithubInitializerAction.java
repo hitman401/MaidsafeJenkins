@@ -11,6 +11,12 @@ public class GithubInitializerAction extends InvisibleAction {
 	private List<String> modules;
 	private Map<String, Map<String, Object>> pullRequests;	
 	private boolean testingMode;
+	private StringBuilder failureReason;
+	
+	public GithubInitializerAction() {
+		failureReason = new StringBuilder();
+	}
+	
 	
 	public boolean isTestingMode() {
 		return testingMode;
@@ -42,6 +48,14 @@ public class GithubInitializerAction extends InvisibleAction {
 	
 	public void setPullRequests(Map<String, Map<String, Object>> pullRequests) {
 		this.pullRequests = pullRequests;
+	}
+	public String getFailureReason() {
+		return failureReason.toString();
+	}
+	public void setFailureReason(String failureReason) {
+		this.failureReason.append(failureReason).append("\n");
 	}	
+	
+	
 	
 }

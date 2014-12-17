@@ -69,6 +69,7 @@ public class GitHubPullRequestHelper {
 				if (watchingForBaseBranch == null) {
 					watchingForBaseBranch = tempBase;
 				} else if (!watchingForBaseBranch.equals(tempBase)) {
+					// TODO Elaborate more on results
 					throw new Exception("Mismatch in base branches across PR:: " + tempBase + ", "
 							+ watchingForBaseBranch);
 				}
@@ -103,6 +104,7 @@ public class GitHubPullRequestHelper {
 			// Only one PR should match, thus a validation to check the
 			// condition
 			if (matched && lastMatchedPR != null) {
+				// TODO refactor msg
 				throw new Exception("Two many Pull Requests matching the condition");
 			} else if (matched) {
 				lastMatchedPR = pullRequest;

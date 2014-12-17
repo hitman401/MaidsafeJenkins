@@ -17,6 +17,7 @@ import javax.servlet.ServletException;
 
 import net.sf.json.JSONObject;
 
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.FailureCause;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
@@ -166,7 +167,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {		
 		EnvVars envVars;
 		GithubCheckoutAction checkoutAction;
-		GithubInitializerAction initializerAction = null;
+		GithubInitializerAction initializerAction = null;		
 		GitHubHelper githubHelper;
 		Map<String, Map<String, Object>> pullRequest;
 		final String ISSUE_KEY_PARAM = "issueKey";
@@ -205,10 +206,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				CommitStatus commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode());
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
-			}
-			if (build.getActions(GithubCheckoutAction.class) == null) {
-				build.addAction(checkoutAction);
 			}			
+			build.addAction(checkoutAction);					
 			List<String> shellCommands = new ArrayList<String>();
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);			
@@ -216,8 +215,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			if (!issueKey.isEmpty() && (pullRequest == null || pullRequest.isEmpty())) {				
 				checkoutAction.setBuildPassed(false);
 				checkoutAction.setReasonForFailure("No Matching Pull Request found for " + issueKey);
-				logger.println("No Matching Pull Request found for " + issueKey);
-				build.addAction(checkoutAction);				
+				logger.println("No Matching Pull Request found for " + issueKey);							
 				return false;
 			}				
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
@@ -226,13 +224,17 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);			
-			return checkoutAction.isBuilPassed();
-		} catch (Exception exception) {
+			checkoutAction.setBaseBranch(defaultBaseBranch);						
+		} catch (Exception exception) {				
+			checkoutAction.setReasonForFailure(exception.getMessage());
+			checkoutAction.setBuildPassed(false);
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
+		}	
+		if (initializerAction != null && !checkoutAction.isBuilPassed()) {
+			initializerAction.setFailureReason(build.getProject().getFullName() + " #" + build.number + " - " + checkoutAction.getReasonForFailure());
 		}
-		return false;
+		return checkoutAction.isBuilPassed();
 	}
 		
 

@@ -67,7 +67,7 @@ public class GitHubHelper {
 			scanner = new Scanner(submodulesOutput.toString());
 			modulePathMapping = new HashMap<String, String>();			
 			while (scanner.hasNextLine()) {				
-				temp = scanner.nextLine();				
+				temp = scanner.nextLine();		
 				splittedArray = temp.split(",");
 				if (splittedArray.length != 2 || splittedArray[0].contains("git config --list")) {
 					continue;
