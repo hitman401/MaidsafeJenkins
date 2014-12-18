@@ -3,21 +3,15 @@ package org.jenkinsci.plugins.MaidsafeJenkins;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
-import hudson.scm.ChangeLogSet.AffectedFile;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
-import org.jenkinsci.plugins.MaidsafeJenkins.actions.FailureCause;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
@@ -28,8 +22,6 @@ import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-
-import com.thoughtworks.xstream.converters.extended.EncodedByteArrayConverter;
 
 
 /**
@@ -164,7 +156,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		
 
 	@Override
-	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {		
+	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {		
 		EnvVars envVars;
 		GithubCheckoutAction checkoutAction;
 		GithubInitializerAction initializerAction = null;		
@@ -239,9 +231,10 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		
 
 	/*
-	 * BuildRunListner provides Callbacks at the build action events.
+	 * BuildRunListner provides Call backs at the build action events.
 	 *  
 	 */
+	@SuppressWarnings({ "rawtypes", "serial" })
 	@Extension
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
 
@@ -317,7 +310,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			return FormValidation.ok();
 		}
 
-		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+		public boolean isApplicable(@SuppressWarnings("rawtypes") Class<? extends AbstractProject> aClass) {
 			return true;
 		}
 
