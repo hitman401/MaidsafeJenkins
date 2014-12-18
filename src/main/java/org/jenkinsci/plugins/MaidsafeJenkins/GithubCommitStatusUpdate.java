@@ -37,17 +37,12 @@ public class GithubCommitStatusUpdate extends Publisher {
 		GithubInitializerAction initializerAction;
 		CommitStatus commitStatusApi;
 		PrintStream logger;
-		logger = listener.getLogger();		
-		for (Action action : build.getActions()) {
-			listener.getLogger().println(action.getClass());
-		}
-		
+		logger = listener.getLogger();				
 		initializerAction = build.getAction(GithubInitializerAction.class);
 		if (initializerAction == null) {
 			logger.println("Pull Requests could not be found. Failed to update commit status in Github");
 			return true;
-		}
-		
+		}	
 		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger, initializerAction.isTestingMode());
 		commitStatusApi.setAccessToken(initializerAction.getOauthAccessToken());
 		commitStatusApi.updateAll(initializerAction.getPullRequests(), 

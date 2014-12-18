@@ -16,6 +16,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.jenkinsci.plugins.MaidsafeJenkins.Exception.BaseBranchMisMatchException;
+import com.jenkinsci.plugins.MaidsafeJenkins.Exception.TooManyPRForModule;
+
 /**
  *
  * @author krishnakumarp
@@ -26,6 +29,7 @@ public class GitHubPullRequestHelper {
 	private List<String> repositories;
 	private PrintStream logger;
 
+	
 	public static enum PR_MATCH_STRATERGY {
 		BRANCH_NAME_STARTS_WITH, BRANCH_NAME_STARTS_WITH_IGNORE_CASE
 	}
@@ -49,9 +53,11 @@ public class GitHubPullRequestHelper {
 	public Map<String, Map<String, Object>> getMatchingPR(String text, Filter filter, PR_MATCH_STRATERGY stratergy)
 			throws Exception {
 		Map<String, Map<String, Object>> matchingPRForModule = new HashMap<String, Map<String, Object>>();
-		JSONObject tempObj;
-		String tempBase;
-		String watchingForBaseBranch = null;
+		JSONObject tempObj = null;
+		String tempBaseBranch;
+		String repoBaseBranch = null;
+		String baseBranchforPR = null;
+		JSONArray prListforRepo;
 		if (filter == null) {
 			filter = Filter.NONE;
 		}
@@ -59,19 +65,18 @@ public class GitHubPullRequestHelper {
 			stratergy = PR_MATCH_STRATERGY.BRANCH_NAME_STARTS_WITH_IGNORE_CASE;
 		}
 		for (String repo : repositories) {
-			JSONArray prListforRepo = getPRListFromGithub(org, repo, filter);
+			prListforRepo = getPRListFromGithub(org, repo, filter);
 			if (prListforRepo == null || prListforRepo.size() == 0) {
 				continue;
-			}
-			tempObj = findMatchingPR(text, stratergy, prListforRepo);
+			}		
+			tempObj = findMatchingPR(text, stratergy, prListforRepo, repo);		
 			if (tempObj != null) {
-				tempBase = (String) ((JSONObject) tempObj.get("base")).get("ref");
-				if (watchingForBaseBranch == null) {
-					watchingForBaseBranch = tempBase;
-				} else if (!watchingForBaseBranch.equals(tempBase)) {
-					// TODO Elaborate more on results
-					throw new Exception("Mismatch in base branches across PR:: " + tempBase + ", "
-							+ watchingForBaseBranch);
+				tempBaseBranch = (String) ((JSONObject) tempObj.get("base")).get("ref");
+				if (baseBranchforPR == null) {
+					repoBaseBranch = repo;
+					baseBranchforPR = tempBaseBranch;
+				} else if (!baseBranchforPR.equals(tempBaseBranch)) { 
+					throw new BaseBranchMisMatchException(repo, tempBaseBranch, repoBaseBranch, baseBranchforPR);					
 				}
 				matchingPRForModule.put(repo, toMap(tempObj));
 			}
@@ -82,8 +87,22 @@ public class GitHubPullRequestHelper {
 	public void setAccessToken(String token) {
 		accessToken = token;
 	}
+	
+	private boolean isMatchFound(PR_MATCH_STRATERGY stratergy, String prBranchRef, String key) {
+		boolean matched;
+		switch (stratergy) {
+			case BRANCH_NAME_STARTS_WITH:
+				matched = prBranchRef.startsWith(key);
+				break;
+	
+			default: // BRANCH_NAME_STARTS_WITH_IGNORE_CASE
+				matched = prBranchRef.toLowerCase().startsWith(key.toLowerCase());
+				break;
+		}	
+		return matched;
+	}
 
-	private JSONObject findMatchingPR(String text, PR_MATCH_STRATERGY stratergy, JSONArray prList) throws Exception {
+	private JSONObject findMatchingPR(String key, PR_MATCH_STRATERGY stratergy, JSONArray prList, String repo) throws Exception {
 		JSONObject pullRequest;
 		JSONObject prHead;
 		JSONObject lastMatchedPR = null;
@@ -91,21 +110,10 @@ public class GitHubPullRequestHelper {
 		for (Object obj : prList) {
 			matched = false;
 			pullRequest = (JSONObject) obj;
-			prHead = (JSONObject) pullRequest.get(PR_HEAD_REPO_KEY);
-			switch (stratergy) {
-			case BRANCH_NAME_STARTS_WITH:
-				matched = prHead.get(PR_BRANCH_KEY).toString().startsWith(text);
-				break;
-
-			default: // BRANCH_NAME_STARTS_WITH_IGNORE_CASE
-				matched = prHead.get(PR_BRANCH_KEY).toString().toLowerCase().startsWith(text.toLowerCase());
-				break;
-			}
-			// Only one PR should match, thus a validation to check the
-			// condition
-			if (matched && lastMatchedPR != null) {
-				// TODO refactor msg
-				throw new Exception("Two many Pull Requests matching the condition");
+			prHead = (JSONObject) pullRequest.get(PR_HEAD_REPO_KEY);			
+			matched = isMatchFound(stratergy, prHead.get(PR_BRANCH_KEY).toString(), key); 
+			if (matched && lastMatchedPR != null) { // Only one PR should match, thus a validation to check the	condition				
+				throw new TooManyPRForModule(repo);
 			} else if (matched) {
 				lastMatchedPR = pullRequest;
 			}

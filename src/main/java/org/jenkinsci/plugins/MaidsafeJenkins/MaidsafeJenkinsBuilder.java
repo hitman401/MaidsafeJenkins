@@ -75,8 +75,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		this.updateCommitStatusToPending = updateCommitStatusToPending;
 		this.testingMode = testingMode;
 	}
-	
-	
+		
 	private void updateCheckoutActionForPR(GithubCheckoutAction action, Map<String, Map<String, Object>> prList) {
 		String module;
 		Iterator<String> iterator;
@@ -95,9 +94,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		action.setMatchingPRList(urls);	
 		action.setModulesWithMatchingPR(modules);
 		action.setActualPRList(prList);
-	}
-	
-		
+	}		
 	
 	private GithubInitializerAction getInitalizer(FilePath projectPath, PrintStream logger, ShellScript script, GithubCheckoutAction checkoutAction) {
 		GithubInitializerAction initializerAction;
