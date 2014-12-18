@@ -99,6 +99,7 @@ public class GitHubHelper {
 	public GithubCheckoutAction checkoutModules(Map<String, Map<String, Object>> prList) throws Exception {
 		int scriptExecutionStatus;
 		String temp = null;		
+		Map<String, Object> pullRequest;
 		List<String> command = new ArrayList<String>();		
 		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
 		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
@@ -109,7 +110,7 @@ public class GitHubHelper {
 			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
 		}
 		consoleLogger.println("Super project and Sub modules were checked out to the " +
-				defaultBaseBranch + " branch with the status #" + scriptExecutionStatus);
+				defaultBaseBranch + " branch with the status " + scriptExecutionStatus);
 		if (prList == null || prList.isEmpty()) {			
 			return checkoutAction;
 		}
@@ -120,26 +121,36 @@ public class GitHubHelper {
 			if (!modulePathMapping.containsKey(temp)) {
 				consoleLogger.println("ERROR :: " + temp + " could not be found. ");
 			}
+			pullRequest = prList.get(temp);
 			command.add("cd " + modulePathMapping.get(temp));
-			command.addAll(buildPRMergeCommands(prList.get(temp)));			
+			command.addAll(buildPRMergeCommands(pullRequest));			
 			scriptExecutionStatus = script.execute(command);
 			if (scriptExecutionStatus != 0) {
 				doHardReset();
 				checkoutAction.setBuildPassed(false);
-				checkoutAction.setReasonForFailure("Merge from remote branch has conflicts in module " + temp);				
+				checkoutAction.setReasonForFailure("Merge from remote branch " + getBaseBranchNameFromPR(pullRequest) + " with local branch " +
+						getRemoteBranchNameToMerge(pullRequest) + " has encountered conflicts in module - " + temp);				
 			}			
 		}					
 		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());	
 		return checkoutAction;
 	}
+	
+	private String getRemoteBranchNameToMerge(Map<String, Object> pullRequest) {
+		return ((Map) pullRequest.get("base")).get("ref").toString();
+	}
+	
+	private String getBaseBranchNameFromPR(Map<String, Object> pullRequest) {		
+		return ((Map<String, Object>) pullRequest.get("head")).get("ref").toString();
+	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private List<String> buildPRMergeCommands(Map<String, Object> pullRequest) {
-		List<String> mergeCommand = new ArrayList<String>();
-		Map<String, Object> prHead = (Map<String, Object>) pullRequest.get("head");
-		String localBranch = prHead.get("ref").toString();
-		String baseBranch = ((Map) pullRequest.get("base")).get("ref").toString();
-		String pullRemoteSSHUrl = ((Map) prHead.get("repo")).get("ssh_url").toString();
+		List<String> mergeCommand = new ArrayList<String>();		
+		String localBranch = getBaseBranchNameFromPR(pullRequest);
+		String baseBranch = getRemoteBranchNameToMerge(pullRequest);
+		String pullRemoteSSHUrl = ( (Map) ((Map<String, Object>) pullRequest.get("head")).get("repo"))
+				.get("ssh_url").toString();
 		mergeCommand.add("git checkout -b " + localBranch + " " + baseBranch);
 		mergeCommand.add("git pull " + pullRemoteSSHUrl + " " + localBranch);
 		return mergeCommand;

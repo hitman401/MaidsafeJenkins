@@ -3,14 +3,12 @@ package org.jenkinsci.plugins.MaidsafeJenkins.github;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
-
 import jenkins.model.JenkinsLocationConfiguration;
 
 
