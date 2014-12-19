@@ -134,7 +134,7 @@ public class CommitStatus {
 			}
 			postMethod.setEntity(new StringEntity(payload.toString(), "application/json", "UTF-8"));
 			responseStatusCode = client.execute(postMethod).getStatusLine().getStatusCode();
-			if (responseStatusCode != HttpStatus.SC_OK){
+			if (responseStatusCode != 201){ // 201 status is returned for successful status creation 
 				logger.println("Commit status API update failed with STATUS CODE :: " + responseStatusCode);
 			}
 		} catch(Exception ex) {
