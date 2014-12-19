@@ -14,7 +14,7 @@
   <f:section title="MAIDSafe CI Builder">
     <f:entry title="OAuth Access token Github" field="githubToken"
       description="OAuth Acces token for invoking the Github rest api">
-      <f:textbox />
+      <f:password />
     </f:entry>    
   </f:section>  
 </j:jelly>

@@ -3,12 +3,16 @@ package org.jenkinsci.plugins.MaidsafeJenkins.github;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.Map;
+
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import jenkins.model.JenkinsLocationConfiguration;
 
 
@@ -20,7 +24,7 @@ public class CommitStatus {
 	private final String END_POINT = "https://api.github.com/repos/%s/%s/statuses/%s";
 	private JenkinsLocationConfiguration locationConfig = new JenkinsLocationConfiguration();
 	
-	private final String SUCCESS_DESCRIPTION = "Build succeeded. Good to merge.";
+	private final String SUCCESS_DESCRIPTION = "Build has completed successfully";
 	private final String FAILURE_DESCRIPTION = "Build failed. Check the CI build for more information";
 	private final String PENDING_DESCRIPTION = "Build triggered in CI machine";
 	
@@ -35,15 +39,13 @@ public class CommitStatus {
 		PENDING, SUCCESS, FAILURE
 	}
 	
-	public CommitStatus(String orgName, PrintStream logger, boolean testingMode) {
+	public CommitStatus(String orgName, PrintStream logger, boolean testingMode, String accessToken) {
 		this.orgName = orgName;
 		this.logger = logger;
 		this.testingMode = testingMode;
+		this.accessToken = accessToken;
 	}
 	
-	public void setAccessToken(String token) {
-		accessToken = token;
-	}
 	
 	private String getDefaultDescription(State state) {
 		String description;
@@ -99,8 +101,8 @@ public class CommitStatus {
 		Map<String, Object> pr;
 		String module;
 		String sha;
-		Iterator<String> modules = pullRequests.keySet().iterator();
-		while (modules.hasNext()) {
+		Iterator<String> modules = pullRequests.keySet().iterator();		
+		while (modules.hasNext()) {			
 			module = modules.next();
 			pr = pullRequests.get(module);
 			sha = (String) ((Map<String, Object>) pr.get("head")).get("sha");
@@ -114,26 +116,24 @@ public class CommitStatus {
 	}
 	
 	public void update(String repo, String sha, State status, String buildRefUrl, String description , String context) {
-		HttpClient client;
-		HttpPost postMethod;
-		HttpEntity entity;
+		DefaultHttpClient client;
+		HttpPost postMethod;		
 		int responseStatusCode;
-		CommitStatusPayload payload = getPayload(status, buildRefUrl, description, context);
+		CommitStatusPayload payload = getPayload(status, buildRefUrl, description, context);		
 		if (testingMode) {
 			logger.println("URL :: " +  String.format(END_POINT, orgName, repo, sha));
 			logger.println("Post Data :: " +  payload);
 			return;
 		}
 		try {
-			client = new HttpClient();
+			client = new DefaultHttpClient();
 			postMethod = new HttpPost(String.format(END_POINT, orgName, repo, sha));
-			postMethod.setHeader("Content-Type", "application/json");
+			postMethod.setHeader("Content-Type", "application/json");			
 			if (accessToken != null && !accessToken.isEmpty()) {
 				postMethod.setHeader("Authorization", "token " +  accessToken);
 			}
-			entity = (HttpEntity) new StringRequestEntity(payload.toString(), "application/json", "UTF-8");
-			postMethod.setEntity(entity);
-			responseStatusCode = client.executeMethod((HttpMethod) postMethod);
+			postMethod.setEntity(new StringEntity(payload.toString(), "application/json", "UTF-8"));
+			responseStatusCode = client.execute(postMethod).getStatusLine().getStatusCode();
 			if (responseStatusCode != HttpStatus.SC_OK){
 				logger.println("Commit status API update failed with STATUS CODE :: " + responseStatusCode);
 			}

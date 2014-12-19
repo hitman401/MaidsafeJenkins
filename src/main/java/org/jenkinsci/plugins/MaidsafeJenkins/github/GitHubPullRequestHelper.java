@@ -65,7 +65,7 @@ public class GitHubPullRequestHelper {
 			stratergy = PR_MATCH_STRATERGY.BRANCH_NAME_STARTS_WITH_IGNORE_CASE;
 		}
 		for (String repo : repositories) {
-			prListforRepo = getPRListFromGithub(org, repo, filter);
+			prListforRepo = getPRListFromGithub(org, repo, filter);			
 			if (prListforRepo == null || prListforRepo.size() == 0) {
 				continue;
 			}		
@@ -80,7 +80,7 @@ public class GitHubPullRequestHelper {
 				}
 				matchingPRForModule.put(repo, toMap(tempObj));
 			}
-		}
+		}		
 		return matchingPRForModule;
 	}
 	

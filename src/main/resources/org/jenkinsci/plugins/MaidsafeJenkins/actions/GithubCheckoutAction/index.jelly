@@ -11,7 +11,7 @@
 		       	<div>	       	
 			       	<b>Reason :  </b>${it.githubCheckoutAction.failureReason}	       	
 		       	</div>
-	       	</j:if>
+	       	</j:if>	    
 	       	<div>
 		       	<b>Base Branch :  </b> ${it.githubCheckoutAction.baseBranch}  
 	       	</div>
@@ -22,7 +22,15 @@
 		       			${url}
 		       		</j:forEach>
 	       		</div>
-		    </div>	           		     	      	   
+		    </div>
+	       	<div>
+		       	<b>Modules built on branches : </b>
+		       	<div>
+		       		<j:forEach var="key" items="${it.githubCheckoutAction.branchUsedByModule.keySet()}">
+		       			${key} : ${it.githubCheckoutAction.branchUsedByModule[key]}
+		       		</j:forEach>
+		       	</div>		       	
+	       	</div>	           		     	      	   
 		</l:main-panel>
   	</l:layout>
 </j:jelly>

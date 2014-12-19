@@ -74,7 +74,7 @@ public class GitHubHelper {
 				}				
 				modulePathMapping.put(splittedArray[1].trim().toLowerCase(), splittedArray[0].trim());
 			}
-			consoleLogger.println(modulePathMapping);
+			consoleLogger.println(modulePathMapping.size() + " modules were found");
 		} catch (Exception ex) {
 			consoleLogger.println(ex);
 		}
@@ -130,7 +130,8 @@ public class GitHubHelper {
 				checkoutAction.setBuildPassed(false);
 				checkoutAction.setReasonForFailure("Merge from remote branch " + getBaseBranchNameFromPR(pullRequest) + " with local branch " +
 						getRemoteBranchNameToMerge(pullRequest) + " has encountered conflicts in module - " + temp);				
-			}			
+			}
+			checkoutAction.addBranchUsedByModule(temp, getBaseBranchNameFromPR(pullRequest));
 		}					
 		checkoutAction.setBranchTarget(((Map<String, Object>) prList.get(temp).get("head")).get("ref").toString());	
 		return checkoutAction;

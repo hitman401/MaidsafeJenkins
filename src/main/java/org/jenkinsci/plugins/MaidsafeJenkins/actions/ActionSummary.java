@@ -4,7 +4,7 @@ package org.jenkinsci.plugins.MaidsafeJenkins.actions;
 import java.util.HashMap;
 import java.util.List;
 
-
+// TODO Refactor
 public class ActionSummary {
 	
 	private HashMap<String, Object> summary;
@@ -15,10 +15,12 @@ public class ActionSummary {
 	private final String BUILD_PASSED_KEY = "buildPassed";
 	private final String REASON_KEY = "failureReason";
 	private final String MODULES_WITH_MATCHING_KEY = "modulesMatchingIssue";	
+	private final String BRANCH_USED_BY_MODULE = "branchUsedByModule";	
 	
 	public ActionSummary() {
 		summary = new HashMap<String, Object>();
 		summary.put(BUILD_PASSED_KEY, false);
+		summary.put(BRANCH_USED_BY_MODULE, new HashMap<String, String>());
 	}
 
 	public String getIssueKey() {
@@ -77,6 +79,10 @@ public class ActionSummary {
 
 	public void setModulesWithMatchingPR(List<String> modulesWithMatchingPR) {
 		summary.put(MODULES_WITH_MATCHING_KEY, modulesWithMatchingPR);
+	}
+	
+	public void addBranchUsedByModule(String module, String branchName) {		
+		((HashMap<String, String>) summary.get(BRANCH_USED_BY_MODULE)).put(module, branchName);
 	}
 	
 	public HashMap<String, Object> getSummary() {

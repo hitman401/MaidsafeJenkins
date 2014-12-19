@@ -181,7 +181,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			if (initializerAction == null) {
 				logger.println("Initializer Running for Project");				
 				initializerAction = getInitalizer(rootDir, logger, script, checkoutAction);
-				initializerAction.setOrgName(orgName);
+				initializerAction.setOrgName(orgName);				
 				if (!issueKey.isEmpty()) {
 					initializerAction.setPullRequests(getPullRequest(issueKey, initializerAction.getModules(), logger));
 				}
@@ -190,9 +190,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			if (!issueKey.isEmpty()) {
 				logger.println("Process initiated for token #" + issueKey);
 				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
-			}		
+			}			
 			if (updateCommitStatusToPending) {					
-				CommitStatus commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode());
+				CommitStatus commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode(), initializerAction.getOauthAccessToken());				
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
 			}			

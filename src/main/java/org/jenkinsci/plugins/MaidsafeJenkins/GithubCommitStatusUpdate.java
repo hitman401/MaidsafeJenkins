@@ -23,7 +23,7 @@ import hudson.tasks.Publisher;
 public class GithubCommitStatusUpdate extends Publisher {	
 	
 	@DataBoundConstructor
-	public GithubCommitStatusUpdate() {	
+	public GithubCommitStatusUpdate() {
 		
 	}
 
@@ -43,10 +43,16 @@ public class GithubCommitStatusUpdate extends Publisher {
 			logger.println("Pull Requests could not be found. Failed to update commit status in Github");
 			return true;
 		}	
-		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger, initializerAction.isTestingMode());
-		commitStatusApi.setAccessToken(initializerAction.getOauthAccessToken());
-		commitStatusApi.updateAll(initializerAction.getPullRequests(), 
-				build.getResult() == Result.SUCCESS ? State.SUCCESS : State.FAILURE, build.getUrl(), initializerAction.getFailureReason());	
+		commitStatusApi = new CommitStatus(initializerAction.getOrgName(), logger,
+				initializerAction.isTestingMode(), initializerAction.getOauthAccessToken());		
+		if (build.getResult() == Result.SUCCESS) {
+			commitStatusApi.updateAll(initializerAction.getPullRequests(), 
+					State.SUCCESS, build.getUrl());
+		} else {
+			commitStatusApi.updateAll(initializerAction.getPullRequests(), 
+					State.FAILURE, build.getUrl(), initializerAction.getFailureReason());
+		}
+			
 		return true;
 	}
 	
