@@ -6,12 +6,16 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
@@ -213,7 +217,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);						
+			checkoutAction.setBaseBranch(defaultBaseBranch);	
+			checkoutAction.setBuildPassed(true);
 		} catch (Exception exception) {				
 			checkoutAction.setReasonForFailure(exception.getMessage());
 			checkoutAction.setBuildPassed(false);
@@ -242,20 +247,33 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public void onCompleted(Run r, TaskListener tl) {			
 			super.onCompleted(r, tl);
 			try {
+				List<String> cmds;
+				List<String> tempList = new ArrayList<String>();
+				String targetBranch;
+				HashMap<String, String> branchesToDelete;
 				String DEL_BRANCH_CMD = "git checkout %S && git branch -D %s";
 				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
-				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
-		
+				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);		
 				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branch " + checkoutAction.getBranchTarget());
-				List<String> cmds = new ArrayList<String>();
-				cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), checkoutAction.getBranchTarget()));
-				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
-						checkoutAction.getBranchTarget()));
-				checkoutAction.getScript().execute(cmds);
-				//affetcedSubmoduleFile.delete();
+				branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");
+				Iterator<String> branchesInterator = branchesToDelete.keySet().iterator();
+				// TODO instead of deleting in all modules - delete only needed branches by navigating to module
+				while (branchesInterator.hasNext()) {
+					targetBranch = branchesInterator.next();
+					if (tempList.contains(targetBranch)) {
+						continue;
+					}
+					tempList.add(targetBranch);
+					cmds = new ArrayList<String>();
+					cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
+					cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
+							checkoutAction.getBranchTarget()));
+					checkoutAction.getScript().execute(cmds);
+				}				
+				affetcedSubmoduleFile.delete();
 			} catch (Exception ex) {
 				Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
 			}
