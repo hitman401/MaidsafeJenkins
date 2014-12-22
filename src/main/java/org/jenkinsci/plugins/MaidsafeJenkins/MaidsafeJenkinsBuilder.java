@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.MaidsafeJenkins;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import hudson.scm.ChangeLogSet.AffectedFile;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -22,6 +23,7 @@ import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubPullRequestHelper;
+import org.jenkinsci.plugins.MaidsafeJenkins.util.ExposeEnvVariable;
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -29,8 +31,9 @@ import org.kohsuke.stapler.StaplerRequest;
 
 
 /**
- * MaidsafeJenkinsBuilder 
- * Builder provides a easy integration for managing Super project and its corresponding Submodule projects 
+ * 
+ * Builder provides a easy integration for managing Super project and its corresponding Submodule projects.
+ * 
  * 
  */
 public class MaidsafeJenkinsBuilder extends Builder {
@@ -80,6 +83,11 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		this.testingMode = testingMode;
 	}
 		
+	/**
+	 * Sets the checkout summary from github for the matching pull requests 
+	 * @param action {@link GithubCheckoutAction} instance to update 
+	 * @param prList Pull Request List to be set to the action
+	 */
 	private void updateCheckoutActionForPR(GithubCheckoutAction action, Map<String, Map<String, Object>> prList) {
 		String module;
 		Iterator<String> iterator;
@@ -100,18 +108,35 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		action.setActualPRList(prList);
 	}		
 	
+	/**
+	 * Creates a {@link GithubInitializerAction} for the build.
+	 * While initializing the subModules names are also generated and set to the {@link GithubInitializerAction}
+	 * @param projectPath
+	 * @param logger
+	 * @param script
+	 * @param checkoutAction
+	 * @return {@link GithubInitializerAction} 
+	 */
 	private GithubInitializerAction getInitalizer(FilePath projectPath, PrintStream logger, ShellScript script, GithubCheckoutAction checkoutAction) {
 		GithubInitializerAction initializerAction;
 		GitHubHelper githubHelper;	
 		initializerAction = new GithubInitializerAction();
 		githubHelper = new GitHubHelper(superProjectName, projectPath, logger, script, defaultBaseBranch, checkoutAction);
-		githubHelper.setAccessToken(getDescriptor().getGithubToken());		
+		githubHelper.setAccessToken(getDescriptor().getGithubToken()); // TODO Remove this setter		
 		initializerAction.setOauthAccessToken(getDescriptor().getGithubToken());
 		initializerAction.setModules(githubHelper.getModuleNames());	
 		initializerAction.setTestingMode(testingMode);
 		return initializerAction;
 	}
 	
+	/**
+	 * Invoked to retrieve the pull requests for the matching issueKey
+	 * @param issueKey
+	 * @param modules
+	 * @param logger
+	 * @return {@link Map} of submodules as keys and their corresonding PullRequest details
+	 * @throws Exception
+	 */
 	private Map<String, Map<String, Object>> getPullRequest(String issueKey, List<String> modules, PrintStream logger) throws Exception {
 		GitHubPullRequestHelper ghprh;
 		ghprh = new GitHubPullRequestHelper(orgName, modules, logger);
@@ -121,6 +146,11 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				GitHubPullRequestHelper.PR_MATCH_STRATERGY.BRANCH_NAME_STARTS_WITH_IGNORE_CASE);
 	}
 	
+	/*
+	 * Invoked to get the {@link GithubInitializerAction} from from the build being executed.
+	 * This method is used by the downstream projects to get the {@link GithubInitializerAction} from the Upstream cause
+	 * 
+	 */
 	private GithubInitializerAction getGithubInitializerAction(AbstractBuild<?, ?> build) {
 		Cause.UpstreamCause upstreamCause;
 		GithubInitializerAction action = null;
@@ -130,31 +160,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}		
 		return action;
 	}
-	
-	private void createAffectedSubmoduleFile(FilePath workspace, List<String> modules, int buildNo) {
-		StringBuilder builder = null;
-		try {
-			FileWriter writer;
-			affetcedSubmoduleFile = new File(workspace.toURI().getPath() + File.separator + "modules.prop" );
-			for (String module : modules) {
-				if (builder == null) {
-					builder = new StringBuilder("BUILD_NO#=" + buildNo);
-					builder.append("\n");
-					builder.append("MODULES=");
-				} else {
-					builder.append(",");
-				}
-				builder.append(module);
-			}
-			writer = new FileWriter(affetcedSubmoduleFile);			
-			writer.write(builder.toString());
-			writer.flush();
-			writer.close();
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
-		
+			
 
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {		
@@ -168,6 +174,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		ShellScript script;
 		FilePath rootDir;
 		PrintStream logger;
+		CommitStatus commitStatus;
 		logger = listener.getLogger();
 		checkoutAction = new GithubCheckoutAction();		
 		checkoutAction.setBaseBranch(defaultBaseBranch);	
@@ -178,7 +185,11 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			script = new ShellScript(rootDir, launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
 			issueKey = envVars.get(ISSUE_KEY_PARAM, "").trim();		
-			/**************************************/				
+			/**************************************/
+			if (!issueKey.isEmpty()) {
+				logger.println("Process initiated for token #" + issueKey);
+				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
+			}
 			checkoutAction.setIssueKey(issueKey);
 			checkoutAction.setOrgName(orgName);			
 			initializerAction = getGithubInitializerAction(build);		
@@ -190,13 +201,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 					initializerAction.setPullRequests(getPullRequest(issueKey, initializerAction.getModules(), logger));
 				}
 				build.addAction(initializerAction);							
-			}
-			if (!issueKey.isEmpty()) {
-				logger.println("Process initiated for token #" + issueKey);
-				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
-			}			
+			}					
 			if (updateCommitStatusToPending) {					
-				CommitStatus commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode(), initializerAction.getOauthAccessToken());				
+				commitStatus = new CommitStatus(orgName, logger, initializerAction.isTestingMode(), initializerAction.getOauthAccessToken());				
 				commitStatus.updateAll(initializerAction.getPullRequests(), State.PENDING, build.getUrl());
 				return true;
 			}			
@@ -214,13 +221,14 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
 			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script,
 					defaultBaseBranch, checkoutAction);
-			createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
+			affetcedSubmoduleFile = 
+					ExposeEnvVariable.createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
 			checkoutAction.setBaseBranch(defaultBaseBranch);	
 			checkoutAction.setBuildPassed(true);
 		} catch (Exception exception) {				
-			checkoutAction.setReasonForFailure(exception.getMessage());
+			checkoutAction.setReasonForFailure("Error Occured :: " + exception.getMessage());
 			checkoutAction.setBuildPassed(false);
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
@@ -257,7 +265,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
-				tl.getLogger().println("Cleaning up the temporary branch " + checkoutAction.getBranchTarget());
+				tl.getLogger().println("Cleaning up the temporary branches");
 				branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");
 				Iterator<String> branchesInterator = branchesToDelete.keySet().iterator();
 				// TODO instead of deleting in all modules - delete only needed branches by navigating to module
