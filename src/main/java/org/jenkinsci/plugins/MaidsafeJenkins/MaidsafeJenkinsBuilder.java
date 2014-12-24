@@ -227,7 +227,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		if (initializerAction != null && !checkoutAction.isBuilPassed()) {
 			initializerAction.setFailureReason(build.getProject().getFullName() + " #" + build.number + " - " + checkoutAction.getReasonForFailure());
 		}
-		return true;//checkoutAction.isBuilPassed();
+		return checkoutAction.isBuilPassed();
 	}
 		
 

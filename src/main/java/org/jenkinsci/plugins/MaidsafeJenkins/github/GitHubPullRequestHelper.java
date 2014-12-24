@@ -88,8 +88,9 @@ public class GitHubPullRequestHelper {
 	public void setAccessToken(String token) {
 		accessToken = token;
 	}
+		
 	
-	private boolean isMatchFound(PR_MATCH_STRATERGY stratergy, String prBranchRef, String key) {
+	private boolean isMatchFound(PR_MATCH_STRATERGY stratergy, String prBranchRef, String key) {		
 		boolean matched;		
 		switch (stratergy) {
 			case BRANCH_NAME_STARTS_WITH:
@@ -112,7 +113,7 @@ public class GitHubPullRequestHelper {
 			matched = false;
 			pullRequest = (JSONObject) obj;
 			prHead = (JSONObject) pullRequest.get(PR_HEAD_REPO_KEY);			
-			matched = isMatchFound(stratergy, prHead.get(PR_BRANCH_KEY).toString(), key); 
+			matched = isMatchFound(stratergy, prHead.get(PR_BRANCH_KEY).toString().replace("-", "_"), key.replace("-", "_"));// Replacing the characters to ensure uniformity 
 			if (matched && lastMatchedPR != null) { // Only one PR should match, thus a validation to check the	condition				
 				throw new TooManyPRForModule(repo);
 			} else if (matched) {
