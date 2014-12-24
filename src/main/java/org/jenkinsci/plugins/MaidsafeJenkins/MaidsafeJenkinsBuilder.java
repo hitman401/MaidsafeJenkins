@@ -3,27 +3,21 @@ package org.jenkinsci.plugins.MaidsafeJenkins;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
-import hudson.scm.ChangeLogSet.AffectedFile;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
-
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubPullRequestHelper;
-import org.jenkinsci.plugins.MaidsafeJenkins.util.ExposeEnvVariable;
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -44,7 +38,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String defaultBaseBranch;	
 	private final boolean updateCommitStatusToPending;
 	private final boolean testingMode;
-	private static File affetcedSubmoduleFile;
 
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
@@ -177,12 +170,13 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		CommitStatus commitStatus;
 		logger = listener.getLogger();
 		checkoutAction = new GithubCheckoutAction();		
-		checkoutAction.setBaseBranch(defaultBaseBranch);	
-		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
+		checkoutAction.setBaseBranch(defaultBaseBranch);
+		checkoutAction.setBuildPassed(true);
+		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));		
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {			
 			envVars = build.getEnvironment(listener);						
-			script = new ShellScript(rootDir, launcher, envVars);
+			script = new ShellScript(build.getWorkspace(), launcher, envVars);
 			/******** PRAMETERS RECEIVED **********/
 			issueKey = envVars.get(ISSUE_KEY_PARAM, "").trim();		
 			/**************************************/
@@ -220,13 +214,10 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			}				
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
 			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script,
-					defaultBaseBranch, checkoutAction);
-			affetcedSubmoduleFile = 
-					ExposeEnvVariable.createAffectedSubmoduleFile(build.getWorkspace(), checkoutAction.getModulesWithMatchingPR(), build.number);
+					defaultBaseBranch, checkoutAction);			
 			checkoutAction = githubHelper.checkoutModules(pullRequest);						
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);	
-			checkoutAction.setBuildPassed(true);
+			checkoutAction.setBaseBranch(defaultBaseBranch);				
 		} catch (Exception exception) {				
 			checkoutAction.setReasonForFailure("Error Occured :: " + exception.getMessage());
 			checkoutAction.setBuildPassed(false);
@@ -236,7 +227,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		if (initializerAction != null && !checkoutAction.isBuilPassed()) {
 			initializerAction.setFailureReason(build.getProject().getFullName() + " #" + build.number + " - " + checkoutAction.getReasonForFailure());
 		}
-		return checkoutAction.isBuilPassed();
+		return true;//checkoutAction.isBuilPassed();
 	}
 		
 
@@ -281,7 +272,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 							checkoutAction.getBranchTarget()));
 					checkoutAction.getScript().execute(cmds);
 				}				
-				affetcedSubmoduleFile.delete();
 			} catch (Exception ex) {
 				Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
 			}

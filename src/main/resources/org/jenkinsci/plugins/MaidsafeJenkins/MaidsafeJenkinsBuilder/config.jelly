@@ -24,7 +24,7 @@
   <f:entry title="Update Commit status to Pending" field="updateCommitStatusToPending">
     <f:checkbox />
   </f:entry>
-   <f:entry title="Testing Mode" field="testingMode">
+   <f:entry title="Testing Mode1" field="testingMode">
     <f:checkbox />
   </f:entry>
 </j:jelly>

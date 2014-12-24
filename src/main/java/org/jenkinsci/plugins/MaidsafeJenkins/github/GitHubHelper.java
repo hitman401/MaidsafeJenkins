@@ -74,7 +74,7 @@ public class GitHubHelper {
 				}				
 				modulePathMapping.put(splittedArray[1].trim().toLowerCase(), splittedArray[0].trim());
 			}
-			consoleLogger.println(modulePathMapping.size() + " modules were found");
+			consoleLogger.println(modulePathMapping.size() + " sub modules were found");
 		} catch (Exception ex) {
 			consoleLogger.println(ex);
 		}

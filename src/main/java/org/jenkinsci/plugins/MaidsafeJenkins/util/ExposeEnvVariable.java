@@ -22,7 +22,7 @@ public class ExposeEnvVariable {
 		StringBuilder builder = null;
 		File affetcedSubmoduleFile = null;
 		try {
-			FileWriter writer;
+			FileWriter writer;			
 			affetcedSubmoduleFile = new File(workspace.toURI().getPath() + File.separator + "modules.prop" );
 			for (String module : modules) {
 				if (builder == null) {

@@ -80,7 +80,8 @@ public class GitHubPullRequestHelper {
 				}
 				matchingPRForModule.put(repo, toMap(tempObj));
 			}
-		}		
+		}
+		logger.println(matchingPRForModule.size() + " modules have matching Pull Requests");
 		return matchingPRForModule;
 	}
 	
@@ -89,7 +90,7 @@ public class GitHubPullRequestHelper {
 	}
 	
 	private boolean isMatchFound(PR_MATCH_STRATERGY stratergy, String prBranchRef, String key) {
-		boolean matched;
+		boolean matched;		
 		switch (stratergy) {
 			case BRANCH_NAME_STARTS_WITH:
 				matched = prBranchRef.startsWith(key);
