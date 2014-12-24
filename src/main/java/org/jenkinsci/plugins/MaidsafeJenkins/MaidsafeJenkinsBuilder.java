@@ -250,18 +250,18 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				List<String> tempList = new ArrayList<String>();
 				String targetBranch;
 				HashMap<String, String> branchesToDelete;
-				String DEL_BRANCH_CMD = "git checkout %S && git branch -D %s";
+				String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s";
 				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);		
 				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branches");
-				branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");
+				branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");							
 				Iterator<String> branchesInterator = branchesToDelete.keySet().iterator();
 				// TODO instead of deleting in all modules - delete only needed branches by navigating to module
 				while (branchesInterator.hasNext()) {
-					targetBranch = branchesInterator.next();
+					targetBranch = branchesToDelete.get(branchesInterator.next());
 					if (tempList.contains(targetBranch)) {
 						continue;
 					}
@@ -269,7 +269,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 					cmds = new ArrayList<String>();
 					cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
 					cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
-							checkoutAction.getBranchTarget()));
+							targetBranch));
 					checkoutAction.getScript().execute(cmds);
 				}				
 			} catch (Exception ex) {

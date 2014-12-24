@@ -10,6 +10,6 @@
     When submitted, it will be passed to the corresponding constructor parameter.
   -->
   <f:entry title="Build Script To Execute" field="buildCommand">
-    <f:textbox />
+    <f:expandableTextbox />
   </f:entry>
 </j:jelly>

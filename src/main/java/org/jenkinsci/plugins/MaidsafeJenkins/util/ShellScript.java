@@ -56,8 +56,7 @@ public class ShellScript {
     	int result;
     	ArgumentListBuilder args = new ArgumentListBuilder();
     	tempFile = tempPath.createTextTempFile("script_" + tempPath.getBaseName() + new Date().getTime(), ".sh",
-    			prepareCommands(cmds, false), !tempPath.isRemote());
-    	logger.println("IS Remote :: " + tempPath.isRemote());    	
+    			prepareCommands(cmds, false), !tempPath.isRemote());    	
     	final Shell.DescriptorImpl desciptor = (DescriptorImpl) Jenkins.getInstance().getDescriptor(Shell.class);
     	final String interpretor = desciptor.getShellOrDefault(tempPath.getChannel());
     	args.add(interpretor);

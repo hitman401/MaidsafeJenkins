@@ -18,7 +18,7 @@ import hudson.model.BuildListener;
 import hudson.tasks.*;
 
 public class BuildScript extends Builder {
-	private final static String BUILD_STEP_NAME = "Build Script";
+	private final static String BUILD_STEP_NAME = "Build Script based on Modules";
 	private final String buildCommand;
 	
 	@DataBoundConstructor
@@ -54,8 +54,11 @@ public class BuildScript extends Builder {
 		commands = new ArrayList<String>();
 		envVars = build.getEnvironment(listener);
 		shellScript = new ShellScript(build.getWorkspace(), launcher, envVars);
+		String[] cmds = buildCommand.split("\\n");							
 		try {
-			commands.add(buildCommand.replace("#MODULES#", getModules(checkoutAction)));
+			for (String cmd : cmds) {
+				commands.add(cmd.replace("#MODULES#", getModules(checkoutAction)));
+			}			
 			result = shellScript.execute(commands);
 		}catch(Exception e) {
 			listener.getLogger().println("Exception :: " + e.getMessage());

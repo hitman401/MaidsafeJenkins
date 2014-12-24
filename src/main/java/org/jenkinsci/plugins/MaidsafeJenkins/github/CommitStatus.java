@@ -13,6 +13,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import com.google.common.collect.DiscreteDomain;
+
 import jenkins.model.JenkinsLocationConfiguration;
 
 
@@ -81,7 +83,10 @@ public class CommitStatus {
 		return stateText;
 	}
 	
-	private CommitStatusPayload getPayload( State status, String buildRefUrl, String description , String context) {		
+	private CommitStatusPayload getPayload( State status, String buildRefUrl, String description , String context) {
+		if (description == null || description.isEmpty()) {
+			description = status == State.SUCCESS ? SUCCESS_DESCRIPTION : FAILURE_DESCRIPTION;
+		}
 		CommitStatusPayload payload = new CommitStatusPayload();
 		payload.setContext(context);
 		payload.setDescription(description);
