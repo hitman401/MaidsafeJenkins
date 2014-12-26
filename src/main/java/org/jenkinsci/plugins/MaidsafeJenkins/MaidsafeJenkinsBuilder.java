@@ -6,19 +6,25 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.TargetParameterBuildAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubPullRequestHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
+import org.jenkinsci.plugins.MaidsafeJenkins.util.TargetBuildParameterUtil;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -153,10 +159,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}		
 		return action;
 	}
-			
+	
+	private boolean buildForPullRequest(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
 
-	@Override
-	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {		
 		EnvVars envVars;
 		GithubCheckoutAction checkoutAction;
 		GithubInitializerAction initializerAction = null;		
@@ -229,6 +234,54 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}
 		return checkoutAction.isBuilPassed();
 	}
+			
+	private boolean buildBasedOnTargetParameter(AbstractBuild<?, ?> build,
+			Launcher launcher, BuildListener listener) {
+		EnvVars envVars;		
+		GitHubHelper githubHelper;		
+		ShellScript script;
+		FilePath rootDir;
+		PrintStream logger;
+		GithubCheckoutAction checkoutAction;
+		TargetParameterBuildAction paramBuildAction;
+		List<String> shellCommands;
+		logger = listener.getLogger();
+		checkoutAction = new GithubCheckoutAction();
+		checkoutAction.setBaseBranch(defaultBaseBranch);
+		checkoutAction.setBuildPassed(true);
+		checkoutAction.setOrgName(orgName);					
+		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));		
+		logger.println("Git REPO :: " + rootDir.getRemote());
+		try {			
+			envVars = build.getEnvironment(listener);						
+			script = new ShellScript(build.getWorkspace(), launcher, envVars);							
+			shellCommands = new ArrayList<String>();
+			paramBuildAction = build.getAction(TargetParameterBuildAction.class);
+			shellCommands.add("git submodule update --init");
+			script.execute(shellCommands);
+			build.addAction(checkoutAction);
+			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script,
+					defaultBaseBranch, checkoutAction);			
+			checkoutAction = githubHelper.checkoutModules(paramBuildAction.getParameters());						
+			checkoutAction.setScript(script);
+			checkoutAction.setBaseBranch(defaultBaseBranch);				
+		} catch (Exception exception) {				
+			checkoutAction.setReasonForFailure("Error Occured :: " + exception.getMessage());
+			checkoutAction.setBuildPassed(false);
+			listener.getLogger().println(exception);
+			exception.printStackTrace();
+		}
+		return checkoutAction.isBuilPassed();		
+	}
+
+	@Override
+	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
+		if (build.getAction(TargetParameterBuildAction.class) != null) {
+			return buildBasedOnTargetParameter(build, launcher, listener);
+		} else {
+			return buildForPullRequest(build, launcher, listener);
+		}
+	}
 		
 
 	/*
@@ -238,6 +291,34 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	@SuppressWarnings({ "rawtypes", "serial" })
 	@Extension
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
+		private String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s";
+		private String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
+		
+		private void cleanBranchByParams(GithubCheckoutAction checkoutAction, TargetParameterBuildAction paramAction) {
+			// TODO
+		}
+		
+		private void cleanBranchesByPullRequest(GithubCheckoutAction checkoutAction) throws Exception {
+			List<String> cmds;
+			List<String> tempList = new ArrayList<String>();
+			String targetBranch;
+			HashMap<String, String> branchesToDelete;		
+			branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");							
+			Iterator<String> branchesInterator = branchesToDelete.keySet().iterator();
+			// TODO instead of deleting in all modules - delete only needed branches by navigating to module
+			while (branchesInterator.hasNext()) {
+				targetBranch = branchesToDelete.get(branchesInterator.next());
+				if (tempList.contains(targetBranch)) {
+					continue;
+				}
+				tempList.add(targetBranch);
+				cmds = new ArrayList<String>();
+				cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
+				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
+						targetBranch));
+				checkoutAction.getScript().execute(cmds);
+			}
+		}
 
 		/**
 		 * When the build run is completed, the temporary branches created are to be deleted.		 
@@ -246,32 +327,16 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public void onCompleted(Run r, TaskListener tl) {			
 			super.onCompleted(r, tl);
 			try {
-				List<String> cmds;
-				List<String> tempList = new ArrayList<String>();
-				String targetBranch;
-				HashMap<String, String> branchesToDelete;
-				String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s";
-				String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);		
 				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branches");
-				branchesToDelete = (HashMap<String, String>) checkoutAction.getGithubCheckoutAction().get("branchUsedByModule");							
-				Iterator<String> branchesInterator = branchesToDelete.keySet().iterator();
-				// TODO instead of deleting in all modules - delete only needed branches by navigating to module
-				while (branchesInterator.hasNext()) {
-					targetBranch = branchesToDelete.get(branchesInterator.next());
-					if (tempList.contains(targetBranch)) {
-						continue;
-					}
-					tempList.add(targetBranch);
-					cmds = new ArrayList<String>();
-					cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
-					cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(),
-							targetBranch));
-					checkoutAction.getScript().execute(cmds);
-				}				
+				if (r.getAction(TargetParameterBuildAction.class) == null) {
+					cleanBranchesByPullRequest(checkoutAction);
+				} else {
+					cleanBranchByParams(checkoutAction, r.getAction(TargetParameterBuildAction.class));
+				}							
 			} catch (Exception ex) {
 				Logger.getLogger(MaidsafeJenkinsBuilder.class.getName()).log(Level.SEVERE, null, ex);
 			}

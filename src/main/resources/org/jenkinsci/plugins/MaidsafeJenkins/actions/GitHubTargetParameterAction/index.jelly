@@ -10,11 +10,11 @@
 	       	<f:form method="post" action="paramsSubmit">
 		       	<f:entry field="targetRepos">
 		    		<f:repeatable field="targets" noAddButton="true" minimum="1">
-		    			<table width="100%">	    			
-		    			<f:entry title="Owner" field="owner">
-		      				<f:textbox />
-		    			</f:entry>
+		    			<table width="100%">		    			
 		    			<f:entry title="Repository name" field="repo">
+		      				<f:textbox />
+		    			</f:entry>	    			
+		    			<f:entry title="Owner" field="owner">
 		      				<f:textbox />
 		    			</f:entry>
 		    			<f:entry title="Branch" field="branch">

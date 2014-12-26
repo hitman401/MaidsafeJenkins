@@ -5,10 +5,13 @@
 package org.jenkinsci.plugins.MaidsafeJenkins.github;
 
 import hudson.*;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
+
+import org.jenkinsci.plugins.MaidsafeJenkins.actions.BuildTargetParameter;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
 
@@ -24,6 +27,7 @@ public class GitHubHelper {
 	private HashMap<String, String> modulePathMapping;
 	private String defaultBaseBranch = "master";
 	private GithubCheckoutAction checkoutAction;
+	private final String GIT_SSH_URL = "git@github.com:%s/%s.git";
 	private final String SUM_MODULE_INIT_CMD = "git submodule init";
 	private final String SUB_MODULE_UPDATE_CMD = "git submodule foreach 'git checkout %s && git pull'";
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
@@ -93,6 +97,36 @@ public class GitHubHelper {
 			consoleLogger.println(e);
 		}
 	}
+	
+	private int checkoutToDefaultBaseBranch() throws Exception {
+		List<String> command = new ArrayList<String>();		
+		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
+		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
+		return script.execute(command);
+	}
+	
+	
+	public GithubCheckoutAction checkoutModules(List<BuildTargetParameter> targets) throws Exception {
+		int scriptExecutionStatus;
+		String temp;
+		List<String> command;
+		scriptExecutionStatus = checkoutToDefaultBaseBranch();		
+		if (scriptExecutionStatus != 0) {
+			doHardReset();
+			throw new Exception("Checking out modules to the latest '" + defaultBaseBranch + "' failed. Check the logs");
+		}
+		for (BuildTargetParameter param : targets) {
+			command = new ArrayList<String>();
+			if (!modulePathMapping.containsKey(param.getRepo().toLowerCase())) {
+				consoleLogger.println("ERROR :: " + param.getRepo().toLowerCase() + " could not be found. ");
+			}
+			temp = modulePathMapping.get(param.getRepo().toLowerCase());
+			command.add("cd " + temp);
+			command.addAll(branchAndCheckout(param.getBranch(), 
+					defaultBaseBranch, String.format(GIT_SSH_URL, param.getOwner(), param.getRepo())));
+		}
+		return checkoutAction;
+	}
 
 
 	@SuppressWarnings("unchecked")
@@ -100,14 +134,11 @@ public class GitHubHelper {
 		int scriptExecutionStatus;
 		String temp = null;		
 		Map<String, Object> pullRequest;
-		List<String> command = new ArrayList<String>();		
-		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
-		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
-		scriptExecutionStatus = script.execute(command);
-		consoleLogger.println("Execution status  ::: " + scriptExecutionStatus);
+		List<String> command;
+		scriptExecutionStatus = checkoutToDefaultBaseBranch();		
 		if (scriptExecutionStatus != 0) {
 			doHardReset();
-			throw new Exception("Checking out modules to the latest " + defaultBaseBranch + " failed. Check the logs");
+			throw new Exception("Checking out modules to the latest '" + defaultBaseBranch + "' failed. Check the logs");
 		}
 		consoleLogger.println("Super project and Sub modules were checked out to the " +
 				defaultBaseBranch + " branch with the status " + scriptExecutionStatus);
@@ -144,17 +175,21 @@ public class GitHubHelper {
 	private String getBaseBranchNameFromPR(Map<String, Object> pullRequest) {		
 		return ((Map<String, Object>) pullRequest.get("head")).get("ref").toString();
 	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private List<String> buildPRMergeCommands(Map<String, Object> pullRequest) {
-		List<String> mergeCommand = new ArrayList<String>();		
-		String localBranch = getBaseBranchNameFromPR(pullRequest);
-		String baseBranch = getRemoteBranchNameToMerge(pullRequest);
-		String pullRemoteSSHUrl = ( (Map) ((Map<String, Object>) pullRequest.get("head")).get("repo"))
-				.get("ssh_url").toString();
+	
+	private List<String> branchAndCheckout(String localBranch, String baseBranch, String pullRemoteSSHUrl) {
+		List<String> mergeCommand = new ArrayList<String>();
 		mergeCommand.add("git checkout -b " + localBranch + " " + baseBranch);
 		mergeCommand.add("git pull " + pullRemoteSSHUrl + " " + localBranch);
 		return mergeCommand;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private List<String> buildPRMergeCommands(Map<String, Object> pullRequest) {				
+		String localBranch = getBaseBranchNameFromPR(pullRequest);
+		String baseBranch = getRemoteBranchNameToMerge(pullRequest);
+		String pullRemoteSSHUrl = ( (Map) ((Map<String, Object>) pullRequest.get("head")).get("repo"))
+				.get("ssh_url").toString();		
+		return branchAndCheckout(localBranch, baseBranch, pullRemoteSSHUrl);
 	}
 
 	public List<String> getModuleNames() {
