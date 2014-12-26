@@ -289,7 +289,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public DescriptorImpl() {
 			load();
 		}
-			
+		
+		
 
 		/**
 		 * Performs on-the-fly validation of the form field 'name'.
@@ -329,8 +330,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 
 		@Override
 		public boolean configure(StaplerRequest req, JSONObject formData) throws Descriptor.FormException {					
-			githubToken = formData.getString("githubToken");				
-			save();
+			githubToken = formData.getString("githubToken");							
+			save();			
 			return super.configure(req, formData);
 		}
 
