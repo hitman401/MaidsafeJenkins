@@ -5,7 +5,7 @@ import hudson.model.Action;
 
 public class TargetParameterBuildAction implements Action {
 	private final String ICON_FILE = "";
-	private final String DISPLAY_NAME = "Repository Parameters";
+	private final String DISPLAY_NAME = "Parameters";
 	private final String URL = "branchesUsed";
 	private List<BuildTargetParameter> parameters;
 	

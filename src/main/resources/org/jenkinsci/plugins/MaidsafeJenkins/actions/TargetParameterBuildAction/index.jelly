@@ -6,8 +6,14 @@
             </l:tasks>
         </l:side-panel>
 	    <l:main-panel>
-	       	<h1>Target Parameters</h1>
-	       		       		     	      	  
+	       	<h1>Parameters</h1>
+	       	<j:forEach var="param" items="${it.getParameters()}">
+	       		<div style="padding:10px">
+	       			<div>Repository: ${param.getRepo()}</div>
+	       			<div>Owner: ${param.getOwner()}</div>
+	       			<div>Branch: ${param.getBranch()}</div>
+	       		</div>	       		
+	       	</j:forEach>	       		     	      	  
 		</l:main-panel>
   	</l:layout>
 </j:jelly>
