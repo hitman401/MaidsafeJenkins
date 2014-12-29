@@ -10,6 +10,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
 
+import hudson.Functions;
 import hudson.model.Action;
 import hudson.model.AbstractProject;
 import hudson.model.Cause;
@@ -45,7 +46,7 @@ public class GitHubTargetParameterAction implements Action {
 	}
 
 	public String getIconFileName() {		
-		return "";
+		return Functions.getResourcePath() + "/plugin/MaidsafeJenkins/icons/octocat.jpg";
 	}
 
 	public String getDisplayName() {

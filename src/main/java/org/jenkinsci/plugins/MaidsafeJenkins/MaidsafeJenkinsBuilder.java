@@ -21,7 +21,6 @@ import org.jenkinsci.plugins.MaidsafeJenkins.github.CommitStatus.State;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.github.GitHubPullRequestHelper;
 import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
-import org.jenkinsci.plugins.MaidsafeJenkins.util.TargetBuildParameterUtil;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -252,6 +251,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		if (action == null) {
 			action = build.getCause(Cause.UpstreamCause.class).getUpstreamRun()
 					.getAction(TargetParameterBuildAction.class);
+			build.addAction(action);
 		}
 		return action;
 	}

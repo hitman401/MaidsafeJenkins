@@ -1,16 +1,17 @@
 package org.jenkinsci.plugins.MaidsafeJenkins.actions;
 
 import java.util.List;
+
+import hudson.Functions;
 import hudson.model.Action;
 
-public class TargetParameterBuildAction implements Action {
-	private final String ICON_FILE = "";
+public class TargetParameterBuildAction implements Action {	
 	private final String DISPLAY_NAME = "Parameters";
 	private final String URL = "branchesUsed";
 	private List<BuildTargetParameter> parameters;
 	
 	public String getIconFileName() {	
-		return ICON_FILE;
+		return Functions.getResourcePath() + "/plugin/MaidsafeJenkins/icons/octocat.jpg";
 	}
 
 	public String getDisplayName() { 
@@ -34,6 +35,5 @@ public class TargetParameterBuildAction implements Action {
 	public void setParameters(List<BuildTargetParameter> parameters) {
 		this.parameters = parameters;
 	}
-
 	
 }
