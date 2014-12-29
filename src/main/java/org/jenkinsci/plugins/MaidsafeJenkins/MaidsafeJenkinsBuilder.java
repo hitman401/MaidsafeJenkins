@@ -124,10 +124,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		initializerAction = new GithubInitializerAction();
 		githubHelper = new GitHubHelper(superProjectName, projectPath, logger, script, defaultBaseBranch,
 				checkoutAction);
-		githubHelper.setAccessToken(getDescriptor().getGithubToken()); // TODO
-																		// Remove
-																		// this
-																		// setter
+		// TODO Remove this setter and pass token in constructor
+		githubHelper.setAccessToken(getDescriptor().getGithubToken()); 
 		initializerAction.setOauthAccessToken(getDescriptor().getGithubToken());
 		initializerAction.setModules(githubHelper.getModuleNames());
 		initializerAction.setTestingMode(testingMode);
@@ -263,12 +261,18 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		ShellScript script;
 		FilePath rootDir;
 		PrintStream logger;
+		String baseBranch;
 		GithubCheckoutAction checkoutAction;
 		TargetParameterBuildAction paramBuildAction;
 		List<String> shellCommands;
 		logger = listener.getLogger();
+		paramBuildAction = getTargetParameterAction(build);
 		checkoutAction = new GithubCheckoutAction();
-		checkoutAction.setBaseBranch(defaultBaseBranch);
+		baseBranch = paramBuildAction.getBaseBranch();
+		if (baseBranch == null || baseBranch.isEmpty()) {
+			baseBranch = defaultBaseBranch;
+		}
+		checkoutAction.setBaseBranch(baseBranch);
 		checkoutAction.setBuildPassed(true);
 		checkoutAction.setOrgName(orgName);
 		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
@@ -279,16 +283,15 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			shellCommands = new ArrayList<String>();
 			if (updateCommitStatusToPending) {
 				return true;
-			}
-			paramBuildAction = getTargetParameterAction(build);
+			}			
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
 			build.addAction(checkoutAction);
-			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch,
+			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, baseBranch,
 					checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(paramBuildAction.getParameters());
 			checkoutAction.setScript(script);
-			checkoutAction.setBaseBranch(defaultBaseBranch);
+			checkoutAction.setBaseBranch(baseBranch);
 		} catch (Exception exception) {
 			checkoutAction.setReasonForFailure("Error Occured :: " + exception.getMessage());
 			checkoutAction.setBuildPassed(false);
@@ -327,10 +330,14 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		
 		private TargetParameterBuildAction getTargetParameterAction(Run<?, ?> build) {
 			TargetParameterBuildAction action;
+			Cause.UpstreamCause upstreamCause;
 			action = build.getAction(TargetParameterBuildAction.class);
 			if (action == null) {
-				action = build.getCause(Cause.UpstreamCause.class).getUpstreamRun()
-						.getAction(TargetParameterBuildAction.class);
+				upstreamCause = build.getCause(Cause.UpstreamCause.class);
+				if (upstreamCause != null) {
+					action = upstreamCause.getUpstreamRun()
+							.getAction(TargetParameterBuildAction.class);
+				}				
 			}
 			return action;
 		}

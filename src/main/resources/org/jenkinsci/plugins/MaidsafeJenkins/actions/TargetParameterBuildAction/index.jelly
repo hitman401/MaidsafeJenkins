@@ -7,6 +7,9 @@
         </l:side-panel>
 	    <l:main-panel>
 	       	<h1>Parameters</h1>
+	       	<div style="padding:10px">
+	       		<h4>Base Branch: {it.getBaseBranch()}</h4>
+	       	</div>
 	       	<j:forEach var="param" items="${it.getParameters()}">
 	       		<div style="padding:10px">
 	       			<div>Repository: ${param.getRepo()}</div>
