@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.MaidsafeJenkins.actions;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 // TODO Refactor
 public class ActionSummary {
@@ -79,6 +80,10 @@ public class ActionSummary {
 
 	public void setModulesWithMatchingPR(List<String> modulesWithMatchingPR) {
 		summary.put(MODULES_WITH_MATCHING_KEY, modulesWithMatchingPR);
+	}
+	
+	public Set<String> getAffectedModules() {
+		return ((HashMap<String, String>) summary.get(BRANCH_USED_BY_MODULE)).keySet();
 	}
 	
 	public void addBranchUsedByModule(String module, String branchName) {		

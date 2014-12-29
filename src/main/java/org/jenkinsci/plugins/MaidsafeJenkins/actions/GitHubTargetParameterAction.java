@@ -35,6 +35,7 @@ public class GitHubTargetParameterAction implements Action {
 		buildTargetParams = buildParamUtil.parse(req.getSubmittedForm());
 		if (buildTargetParams == null) {
 			rsp.sendRedirect(400, "Invalid Parameters - All Fields must be filed");
+			return;
 		} else {
 			paramAction = new TargetParameterBuildAction();
 			paramAction.setParameters(buildTargetParams);
@@ -48,7 +49,7 @@ public class GitHubTargetParameterAction implements Action {
 	}
 
 	public String getDisplayName() {
-		return "Build with Target Repos.";
+		return "Build Now";
 	}
 
 	public String getUrlName() {

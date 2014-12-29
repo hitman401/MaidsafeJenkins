@@ -31,8 +31,8 @@ public class BuildScript extends Builder {
 	}
 	
 	private String getModules(GithubCheckoutAction action) {
-		StringBuilder builder = new StringBuilder();
-		for (String module : action.getModulesWithMatchingPR()) {									
+		StringBuilder builder = new StringBuilder();		
+		for (String module : action.getAffectedModules()) {									
 			builder.append(" ").append(module);
 		}
 		return builder.toString();

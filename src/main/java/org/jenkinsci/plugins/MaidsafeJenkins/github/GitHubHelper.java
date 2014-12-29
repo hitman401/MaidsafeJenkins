@@ -124,7 +124,15 @@ public class GitHubHelper {
 			command.add("cd " + temp);
 			command.addAll(branchAndCheckout(param.getBranch(), 
 					defaultBaseBranch, String.format(GIT_SSH_URL, param.getOwner(), param.getRepo())));
-		}
+			scriptExecutionStatus = script.execute(command);
+			if (scriptExecutionStatus != 0) {
+				doHardReset();
+				checkoutAction.setBuildPassed(false);
+				checkoutAction.setReasonForFailure("Merge from remote branch " + param.getOwner() + ":" +param.getBranch() + " with local branch " +
+						defaultBaseBranch + " has encountered conflicts in module - " + param.getRepo().toLowerCase());				
+			}
+			checkoutAction.addBranchUsedByModule(param.getRepo().toLowerCase(), param.getBranch());
+		}		
 		return checkoutAction;
 	}
 

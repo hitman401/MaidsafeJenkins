@@ -5,7 +5,7 @@ import hudson.model.Action;
 
 public class TargetParameterBuildAction implements Action {
 	private final String ICON_FILE = "";
-	private final String DISPLAY_NAME = "Branches Used To Build";
+	private final String DISPLAY_NAME = "Repository Parameters";
 	private final String URL = "branchesUsed";
 	private List<BuildTargetParameter> parameters;
 	
@@ -34,5 +34,6 @@ public class TargetParameterBuildAction implements Action {
 	public void setParameters(List<BuildTargetParameter> parameters) {
 		this.parameters = parameters;
 	}
+
 	
 }
