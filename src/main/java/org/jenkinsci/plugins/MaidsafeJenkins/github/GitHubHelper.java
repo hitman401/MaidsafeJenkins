@@ -21,8 +21,7 @@ import org.jenkinsci.plugins.MaidsafeJenkins.util.ShellScript;
  */
 public class GitHubHelper {
 
-	private PrintStream consoleLogger;
-	private FilePath superProject; // may be it can be needed in future - not used as of now
+	private PrintStream consoleLogger;	
 	private ShellScript script;
 	private HashMap<String, String> modulePathMapping;
 	private String defaultBaseBranch = "master";
@@ -33,11 +32,12 @@ public class GitHubHelper {
 	private final String SUBMOD_GREP_CMD = "git config --list | sed -rn 's/submodule\\.([^.]*).*\\/(.*)/\\1,\\2/p'";
 	private final String SUPER_PROJ_UPDATE_CMD = "git checkout %s && git pull";
 	private final String HARD_RESET_CMD = "git reset --hard HEAD && git submodule foreach 'git reset --hard HEAD'";
-	private String accessToken;	
-
-	public GitHubHelper(String superProjectName, FilePath superProject, PrintStream consoleLogger, ShellScript script,
+	private String accessToken;		
+	private String subFolder;
+	
+	public GitHubHelper(String superProjectName, String subFolder, PrintStream consoleLogger, ShellScript script,
 			String defaultBaseBranch, GithubCheckoutAction checkoutAction) {
-		this.superProject = superProject;
+		this.subFolder = subFolder;
 		this.consoleLogger = consoleLogger;
 		this.script = script;
 		this.checkoutAction = checkoutAction;
@@ -47,6 +47,13 @@ public class GitHubHelper {
 		updateSubModuleConfig();
 		modulePathMapping.put(superProjectName, ".");
 	}
+	
+	private List<String> moveToSubFoler(List<String> commands) {
+		if (subFolder != null && !subFolder.isEmpty()) {
+			commands.add("cd " + subFolder);
+		}
+		return commands;
+	}
 
 	private void updateSubModuleConfig() {
 		String temp;
@@ -55,6 +62,7 @@ public class GitHubHelper {
 		try {
 			final StringBuilder submodulesOutput = new StringBuilder();
 			List<String> commands = new ArrayList<String>();
+			moveToSubFoler(commands);
 			commands.add(SUM_MODULE_INIT_CMD);
 			commands.add(SUBMOD_GREP_CMD);
 			// Creating a temporary output stream to get the execution data
@@ -91,6 +99,7 @@ public class GitHubHelper {
 	private void doHardReset() {
 		try {
 			List<String> commands = new ArrayList<String>();
+			moveToSubFoler(commands);
 			commands.add(HARD_RESET_CMD);
 			script.execute(commands);
 		} catch(Exception e) {
@@ -99,7 +108,8 @@ public class GitHubHelper {
 	}
 	
 	private int checkoutToDefaultBaseBranch() throws Exception {
-		List<String> command = new ArrayList<String>();		
+		List<String> command = new ArrayList<String>();
+		moveToSubFoler(command);
 		command.add(String.format(SUPER_PROJ_UPDATE_CMD, defaultBaseBranch));
 		command.add(String.format(SUB_MODULE_UPDATE_CMD, defaultBaseBranch));
 		return script.execute(command);
@@ -121,6 +131,7 @@ public class GitHubHelper {
 				consoleLogger.println("ERROR :: " + param.getRepo().toLowerCase() + " could not be found. ");
 			}
 			temp = modulePathMapping.get(param.getRepo().toLowerCase());
+			moveToSubFoler(command);
 			command.add("cd " + temp);
 			command.addAll(branchAndCheckout(param.getBranch(), 
 					defaultBaseBranch, String.format(GIT_SSH_URL, param.getOwner(), param.getRepo())));
@@ -161,6 +172,7 @@ public class GitHubHelper {
 				consoleLogger.println("ERROR :: " + temp + " could not be found. ");
 			}
 			pullRequest = prList.get(temp);
+			moveToSubFoler(command);
 			command.add("cd " + modulePathMapping.get(temp));
 			command.addAll(buildPRMergeCommands(pullRequest));			
 			scriptExecutionStatus = script.execute(command);

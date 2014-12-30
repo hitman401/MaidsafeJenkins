@@ -40,7 +40,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final String defaultBaseBranch;
 	private final boolean updateCommitStatusToPending;
 	private final boolean testingMode;
-
+	private static String subFolder;
+	
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
 	}
@@ -122,7 +123,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		GithubInitializerAction initializerAction;
 		GitHubHelper githubHelper;
 		initializerAction = new GithubInitializerAction();
-		githubHelper = new GitHubHelper(superProjectName, projectPath, logger, script, defaultBaseBranch,
+		githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, defaultBaseBranch,
 				checkoutAction);
 		// TODO Remove this setter and pass token in constructor
 		githubHelper.setAccessToken(getDescriptor().getGithubToken()); 
@@ -225,7 +226,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				return false;
 			}
 			updateCheckoutActionForPR(checkoutAction, pullRequest);
-			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, defaultBaseBranch,
+			githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, defaultBaseBranch,
 					checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(pullRequest);
 			checkoutAction.setScript(script);
@@ -275,7 +276,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		checkoutAction.setBaseBranch(baseBranch);
 		checkoutAction.setBuildPassed(true);
 		checkoutAction.setOrgName(orgName);
-		rootDir = new FilePath(new File(build.getWorkspace() + "/" + repoSubFolder));
+		
+		rootDir = build.getWorkspace();
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {
 			envVars = build.getEnvironment(listener);
@@ -283,11 +285,14 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			shellCommands = new ArrayList<String>();
 			if (updateCommitStatusToPending) {
 				return true;
-			}			
+			}
+			if (repoSubFolder != null && !repoSubFolder.isEmpty()) {
+				shellCommands.add("cd " + repoSubFolder);
+			}
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
 			build.addAction(checkoutAction);
-			githubHelper = new GitHubHelper(superProjectName, rootDir, logger, script, baseBranch,
+			githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, baseBranch,
 					checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(paramBuildAction.getParameters());
 			checkoutAction.setScript(script);
@@ -297,8 +302,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			checkoutAction.setBuildPassed(false);
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
-		}
-		logger.println("Execution completed");
+		}		
 		return checkoutAction.isBuilPassed();
 	}
 
@@ -306,6 +310,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
 		Cause.UpstreamCause upstreamCause;
 		boolean buildForTarget = build.getAction(TargetParameterBuildAction.class) != null;
+		subFolder = repoSubFolder;
 		if (!buildForTarget) {
 			upstreamCause = build.getCause(Cause.UpstreamCause.class);
 			if (upstreamCause != null) {
@@ -347,7 +352,10 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			List<String> branchesCleaned;
 			List<String> cmds;
 			String targetBranch;
-			branchesCleaned = new ArrayList<String>();
+			if (paramAction.getParameters() == null) {
+				return;
+			}
+			branchesCleaned = new ArrayList<String>();			
 			for (BuildTargetParameter param : paramAction.getParameters()) {
 				targetBranch = param.getBranch();
 				if (branchesCleaned.contains(targetBranch)) {
@@ -355,6 +363,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				}
 				branchesCleaned.add(targetBranch);
 				cmds = new ArrayList<String>();
+				if (subFolder != null && !subFolder.isEmpty()) {
+					cmds.add("cd " + subFolder);
+				}
 				cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
 				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(), targetBranch));
 				checkoutAction.getScript().execute(cmds);
@@ -378,6 +389,9 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				}
 				tempList.add(targetBranch);
 				cmds = new ArrayList<String>();
+				if (subFolder != null && !subFolder.isEmpty()) {
+					cmds.add("cd " + subFolder);
+				}
 				cmds.add(String.format(DEL_BRANCH_CMD, checkoutAction.getBaseBranch(), targetBranch));
 				cmds.add(String.format(DEL_BRANCH_SUBMOD_CMD, checkoutAction.getBaseBranch(), targetBranch));
 				checkoutAction.getScript().execute(cmds);
@@ -394,7 +408,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			try {
 				GithubCheckoutAction checkoutAction = r.getAction(GithubCheckoutAction.class);
 				TargetParameterBuildAction paramAction = getTargetParameterAction(r);
-				if (checkoutAction == null || !checkoutAction.isBuilPassed()) {
+				if (checkoutAction == null) {
 					return;
 				}
 				tl.getLogger().println("Cleaning up the temporary branches");				

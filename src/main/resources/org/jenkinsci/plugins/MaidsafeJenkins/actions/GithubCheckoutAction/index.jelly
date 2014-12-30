@@ -1,5 +1,10 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
- 	<l:layout title="Github Checkout Summary">	
+ 	<l:layout title="Github Checkout Summary">
+ 		<l:side-panel>
+            <l:tasks>
+                <l:task icon="images/24x24/up.gif" href="../" title="${%Back to Project}"/>
+            </l:tasks>
+        </l:side-panel> 			
 	    <l:main-panel>
 	       	<h1>Github Checkout Summary</h1>
 	       	<div style="margin-bottom:15px">
