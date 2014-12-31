@@ -6,12 +6,17 @@ import hudson.model.listeners.RunListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.BuildTargetParameter;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubCheckoutAction;
 import org.jenkinsci.plugins.MaidsafeJenkins.actions.GithubInitializerAction;
@@ -427,7 +432,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	@Extension
 	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
 		private String githubToken;
-
+		private String repo;
 		/**
 		 * In order to load the persisted global configuration, you have to call
 		 * load() in the constructor.
@@ -435,6 +440,15 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public DescriptorImpl() {
 			load();
 		}
+		
+
+		public ListBoxModel doFillRepoItems() {
+	        ListBoxModel items = new ListBoxModel();
+	        items.add("Maidsafe-Common");
+	        items.add("Maidsafe-RUDP");
+	        return items;
+	    }
+		
 
 		/**
 		 * Performs on-the-fly validation of the form field 'name'.

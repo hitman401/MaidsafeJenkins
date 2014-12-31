@@ -15,9 +15,7 @@ public class GithubInitializerAction extends InvisibleAction {
 	
 	public GithubInitializerAction() {
 		failureReason = new StringBuilder();
-	}
-	
-	
+	}	
 	public boolean isTestingMode() {
 		return testingMode;
 	}
@@ -55,7 +53,5 @@ public class GithubInitializerAction extends InvisibleAction {
 	public void setFailureReason(String failureReason) {
 		this.failureReason.append(failureReason).append("\n");
 	}	
-	
-	
-	
+		
 }

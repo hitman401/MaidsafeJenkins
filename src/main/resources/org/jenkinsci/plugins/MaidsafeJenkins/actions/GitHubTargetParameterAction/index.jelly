@@ -3,20 +3,62 @@
  		<l:side-panel>
             <l:tasks>
                 <l:task icon="images/24x24/up.gif" href="../" title="${%Back to Project}"/>
-            </l:tasks>
-        </l:side-panel>
-	    <l:main-panel>
+            </l:tasks>            
+        </l:side-panel>        
+	    <l:main-panel>	    	
+	    	<span id="tempStore" style="display:none">
+	    		${it.projectName}
+	    	</span>   
+	    	<script type="text/javascript">	    		
+	    		var MAIDSafe = {};
+	    		MAIDSafe.org = 'maidsafe';
+	    		MAIDSafe.loadRepos = function(element) {	    		
+	    		alert('hjhj');	
+	    			var options = '';
+	    			if (!MAIDSafe.hasOwnProperty('repos')) {
+	    				return;
+	    			}	    				    		
+	    			for(var i in MAIDSafe.repos){
+	    				options += '<option id="' + MAIDSafe.repos[i].name + '">' + MAIDSafe.repos[i].name + '</option>';
+	    			};
+	    			if (element) {
+	    				jQuery(element).append(options);
+	    			} else {
+	    				jQuery('select[repo="true"]').append(options);
+	    			}
+	    		};	
+	    		// headers: {
+	    					//'Authorization': 'token ' + MAIDSafe.token
+	    				//},
+	    		
+	    		MAIDSafe.getRepositories = function(org) {	    			
+	    			jQuery.ajax({
+	    				url:'https://api.github.com/orgs/' + org + '/repos',	    				
+	    			 	crossDomain: true
+	    			})
+	    			.success(function(data){
+	    				MAIDSafe.repos = data;
+	    				MAIDSafe.loadRepos();	    				
+					})
+	    		};    		
+	    		jQuery('document').ready(function() {
+	    			var element = jQuery('span#tempStore');	    			
+	    			MAIDSafe.token = element.text();
+	    			element.remove();
+	    			MAIDSafe.getRepositories('maidsafe');
+	    		});
+	    	</script> 	    	   
 	       	<h1>${it.projectName}</h1>
 	       	<f:form method="post" action="paramsSubmit">
 	       		<f:entry title="Base Branch" field="baseBranch">
 	       			<f:textbox default="${it.defaultBaseBranch}"/>
-	       		</f:entry>
+	       		</f:entry>	       		
 		       	<f:entry title="Repositories" field="targetRepos">
 		    		<f:repeatable field="targets" noAddButton="true" minimum="1">
 		    			<table width="100%">		    			
-		    			<f:entry title="Repository name" field="repo">
-		      				<f:textbox />
-		    			</f:entry>	    			
+		    			<f:entry field="repo" title="Repository" >
+		   					<f:select repo="true" onload="MAIDSafe.loadRepos(this)"/>		    				
+						</f:entry>	    			
 		    			<f:entry title="Owner" field="owner">
 		      				<f:textbox />
 		    			</f:entry>

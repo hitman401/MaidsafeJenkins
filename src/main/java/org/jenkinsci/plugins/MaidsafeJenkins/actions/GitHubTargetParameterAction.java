@@ -27,12 +27,13 @@ import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.util.ListBoxModel;
 
 public class GitHubTargetParameterAction implements Action {	
 	private AbstractProject<?, ?> project;	
 	
 	public GitHubTargetParameterAction(AbstractProject<?, ?> project) {
-		this.project = project;	
+		this.project = project;			
 	}
 	
 	private String getbaseBranch() {
@@ -53,10 +54,12 @@ public class GitHubTargetParameterAction implements Action {
 	@Exported
 	public String getProjectName() {
 		return project.getName();
-	}
-	
+	}	
+		
 	@Exported
-	public String getDefaultBaseBranch() {		
+	public String getDefaultBaseBranch() {
+		MaidsafeJenkinsBuilder.DescriptorImpl descriptor = (MaidsafeJenkinsBuilder.DescriptorImpl) Jenkins.getInstance().getDescriptor(MaidsafeJenkinsBuilder.class);
+		System.out.println("Access Token :: " + descriptor.getGithubToken());
 		return getbaseBranch();
 	}
 	
