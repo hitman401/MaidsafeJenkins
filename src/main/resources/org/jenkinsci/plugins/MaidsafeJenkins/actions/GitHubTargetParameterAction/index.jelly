@@ -7,47 +7,9 @@
         </l:side-panel>        
 	    <l:main-panel>	    	
 	    	<span id="tempStore" style="display:none">
-	    		${it.projectName}
-	    	</span>   
-	    	<script type="text/javascript">	    		
-	    		var MAIDSafe = {};
-	    		MAIDSafe.org = 'maidsafe';
-	    		MAIDSafe.loadRepos = function(element) {	    		
-	    		alert('hjhj');	
-	    			var options = '';
-	    			if (!MAIDSafe.hasOwnProperty('repos')) {
-	    				return;
-	    			}	    				    		
-	    			for(var i in MAIDSafe.repos){
-	    				options += '<option id="' + MAIDSafe.repos[i].name + '">' + MAIDSafe.repos[i].name + '</option>';
-	    			};
-	    			if (element) {
-	    				jQuery(element).append(options);
-	    			} else {
-	    				jQuery('select[repo="true"]').append(options);
-	    			}
-	    		};	
-	    		// headers: {
-	    					//'Authorization': 'token ' + MAIDSafe.token
-	    				//},
-	    		
-	    		MAIDSafe.getRepositories = function(org) {	    			
-	    			jQuery.ajax({
-	    				url:'https://api.github.com/orgs/' + org + '/repos',	    				
-	    			 	crossDomain: true
-	    			})
-	    			.success(function(data){
-	    				MAIDSafe.repos = data;
-	    				MAIDSafe.loadRepos();	    				
-					})
-	    		};    		
-	    		jQuery('document').ready(function() {
-	    			var element = jQuery('span#tempStore');	    			
-	    			MAIDSafe.token = element.text();
-	    			element.remove();
-	    			MAIDSafe.getRepositories('maidsafe');
-	    		});
-	    	</script> 	    	   
+	    		${it.accessToken}
+	    	</span>
+	    	<script type="text/javascript" src="../../../plugin/MaidsafeJenkins/js/buildnow.js"></script>	    	 	    	  
 	       	<h1>${it.projectName}</h1>
 	       	<f:form method="post" action="paramsSubmit">
 	       		<f:entry title="Base Branch" field="baseBranch">
@@ -57,13 +19,13 @@
 		    		<f:repeatable field="targets" noAddButton="true" minimum="1">
 		    			<table width="100%">		    			
 		    			<f:entry field="repo" title="Repository" >
-		   					<f:select repo="true" onload="MAIDSafe.loadRepos(this)"/>		    				
+		   					<f:select repo="true"/>		    				
 						</f:entry>	    			
 		    			<f:entry title="Owner" field="owner">
-		      				<f:textbox />
+		      				<f:select />
 		    			</f:entry>
 		    			<f:entry title="Branch" field="branch">
-		      				<f:textbox />
+		      				<f:select />
 		    			</f:entry>
 				        <f:entry>
 				          <div align="right">

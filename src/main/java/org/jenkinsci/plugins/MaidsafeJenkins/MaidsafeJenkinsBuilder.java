@@ -46,7 +46,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	private final boolean updateCommitStatusToPending;
 	private final boolean testingMode;
 	private static String subFolder;
-	
+
 	public String getDefaultBaseBranch() {
 		return defaultBaseBranch;
 	}
@@ -131,7 +131,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, defaultBaseBranch,
 				checkoutAction);
 		// TODO Remove this setter and pass token in constructor
-		githubHelper.setAccessToken(getDescriptor().getGithubToken()); 
+		githubHelper.setAccessToken(getDescriptor().getGithubToken());
 		initializerAction.setOauthAccessToken(getDescriptor().getGithubToken());
 		initializerAction.setModules(githubHelper.getModuleNames());
 		initializerAction.setTestingMode(testingMode);
@@ -259,7 +259,6 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		}
 		return action;
 	}
-	
 
 	private boolean buildBasedOnTargetParameter(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
 		EnvVars envVars;
@@ -281,7 +280,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		checkoutAction.setBaseBranch(baseBranch);
 		checkoutAction.setBuildPassed(true);
 		checkoutAction.setOrgName(orgName);
-		
+
 		rootDir = build.getWorkspace();
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {
@@ -297,8 +296,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			shellCommands.add("git submodule update --init");
 			script.execute(shellCommands);
 			build.addAction(checkoutAction);
-			githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, baseBranch,
-					checkoutAction);
+			githubHelper = new GitHubHelper(superProjectName, repoSubFolder, logger, script, baseBranch, checkoutAction);
 			checkoutAction = githubHelper.checkoutModules(paramBuildAction.getParameters());
 			checkoutAction.setScript(script);
 			checkoutAction.setBaseBranch(baseBranch);
@@ -307,7 +305,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			checkoutAction.setBuildPassed(false);
 			listener.getLogger().println(exception);
 			exception.printStackTrace();
-		}		
+		}
 		return checkoutAction.isBuilPassed();
 	}
 
@@ -337,7 +335,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
 		private String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s";
 		private String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
-		
+
 		private TargetParameterBuildAction getTargetParameterAction(Run<?, ?> build) {
 			TargetParameterBuildAction action;
 			Cause.UpstreamCause upstreamCause;
@@ -345,9 +343,8 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			if (action == null) {
 				upstreamCause = build.getCause(Cause.UpstreamCause.class);
 				if (upstreamCause != null) {
-					action = upstreamCause.getUpstreamRun()
-							.getAction(TargetParameterBuildAction.class);
-				}				
+					action = upstreamCause.getUpstreamRun().getAction(TargetParameterBuildAction.class);
+				}
 			}
 			return action;
 		}
@@ -360,7 +357,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			if (paramAction.getParameters() == null) {
 				return;
 			}
-			branchesCleaned = new ArrayList<String>();			
+			branchesCleaned = new ArrayList<String>();
 			for (BuildTargetParameter param : paramAction.getParameters()) {
 				targetBranch = param.getBranch();
 				if (branchesCleaned.contains(targetBranch)) {
@@ -416,7 +413,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 				if (checkoutAction == null) {
 					return;
 				}
-				tl.getLogger().println("Cleaning up the temporary branches");				
+				tl.getLogger().println("Cleaning up the temporary branches");
 				if (paramAction == null) {
 					cleanBranchesByPullRequest(checkoutAction);
 				} else {
@@ -433,6 +430,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
 		private String githubToken;
 		private String repo;
+
 		/**
 		 * In order to load the persisted global configuration, you have to call
 		 * load() in the constructor.
@@ -440,15 +438,13 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		public DescriptorImpl() {
 			load();
 		}
-		
 
 		public ListBoxModel doFillRepoItems() {
-	        ListBoxModel items = new ListBoxModel();
-	        items.add("Maidsafe-Common");
-	        items.add("Maidsafe-RUDP");
-	        return items;
-	    }
-		
+			ListBoxModel items = new ListBoxModel();
+			items.add("Maidsafe-Common");
+			items.add("Maidsafe-RUDP");
+			return items;
+		}
 
 		/**
 		 * Performs on-the-fly validation of the form field 'name'.

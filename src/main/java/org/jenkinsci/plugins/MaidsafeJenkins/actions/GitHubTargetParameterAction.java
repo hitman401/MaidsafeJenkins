@@ -34,9 +34,15 @@ public class GitHubTargetParameterAction implements Action {
 	
 	public GitHubTargetParameterAction(AbstractProject<?, ?> project) {
 		this.project = project;			
-	}
+	}	
 	
-	private String getbaseBranch() {
+	@Exported
+	public String getProjectName() {
+		return project.getName();
+	}	
+		
+	@Exported
+	public String getDefaultBaseBranch() {
 		String baseBranch = "";
 		try{
 			String PACKAGE = "org.jenkinsci.plugins.MaidsafeJenkins.MaidsafeJenkinsBuilder";
@@ -52,15 +58,10 @@ public class GitHubTargetParameterAction implements Action {
 	}
 	
 	@Exported
-	public String getProjectName() {
-		return project.getName();
-	}	
-		
-	@Exported
-	public String getDefaultBaseBranch() {
-		MaidsafeJenkinsBuilder.DescriptorImpl descriptor = (MaidsafeJenkinsBuilder.DescriptorImpl) Jenkins.getInstance().getDescriptor(MaidsafeJenkinsBuilder.class);
-		System.out.println("Access Token :: " + descriptor.getGithubToken());
-		return getbaseBranch();
+	public String getAccessToken() {
+		MaidsafeJenkinsBuilder.DescriptorImpl descriptor;
+		descriptor = (MaidsafeJenkinsBuilder.DescriptorImpl) Jenkins.getInstance().getDescriptor(MaidsafeJenkinsBuilder.class);		
+		return descriptor.getGithubToken();
 	}
 	
 	public void doParamsSubmit(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {			
