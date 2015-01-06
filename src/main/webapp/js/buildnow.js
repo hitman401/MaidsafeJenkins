@@ -1,9 +1,37 @@
 var MAIDSafe = {};
+MAIDSafe.sort = (function() {
+	var compare = function(a, b) {
+		if (a > b) {
+			return 1;
+		}
+		if (a < b) {
+			return -1;
+		}
+		return 0;
+	};
+	var nameSorter = function(a, b) {
+		return compare(a.name.toLowerCase(), b.name.toLowerCase());
+	};
+	var ownerSorter = function(a, b) {		
+		return compare(a.owner.login.toLowerCase(), b.owner.login.toLowerCase());
+	};
+	this.repository = function(data) {
+		data.sort(nameSorter);
+	};
+	this.owner = function(data) {
+		data.sort(ownerSorter);
+	};
+	this.branches = function(data) {
+		data.sort(nameSorter);
+	};
+	return this;
+})();
 MAIDSafe.loadRepoOwners = function(repoSelect) {
 	var ownerSelect = jQuery(':input:eq('
 			+ (jQuery(':input').index(repoSelect) + 1) + ')');
-	var setOwners = function(data) {
+	var setOwners = function(data) {		
 		var options = '';
+		MAIDSafe.sort.owner(data);
 		options += '<option id="' + MAIDSafe.org + '">' + MAIDSafe.org
 				+ '</option>';
 		for (var i = 0; i < data.length; i++) {
@@ -24,6 +52,7 @@ MAIDSafe.loadBranches = function(element) {
 			+ (jQuery(':input').index(ownerSelect) + 1) + ')');
 	var setBranches = function(data) {
 		var options = '';
+		MAIDSafe.sort.branches(data);
 		for (var i = 0; i < data.length; i++) {
 			options += '<option id="' + data[i].name + '">' + data[i].name
 					+ '</option>';
@@ -34,16 +63,14 @@ MAIDSafe.loadBranches = function(element) {
 	MAIDSafe.getBranches(repoSelect.val(), ownerSelect.val(), setBranches);
 };
 MAIDSafe.AddClickObserver = function(repoSelectElement) {
-	this.register = function() {		
+	this.register = function() {
 		setTimeout(function() {
-			console.log(jQuery(':input:eq('
-					+ (jQuery(':input').index(repoSelectElement) + 5) + ')'));
 			MAIDSafe.loadRepos(jQuery(':input:eq('
 					+ (jQuery(':input').index(repoSelectElement) + 5) + ')'));
 		}, 100);
 	};
 };
-MAIDSafe.registerEvents = function(element) {	
+MAIDSafe.registerEvents = function(element) {
 	var buttons;
 	jQuery(element).on('change', function(event) {
 		MAIDSafe.loadRepoOwners(jQuery(event.target));
@@ -53,13 +80,14 @@ MAIDSafe.registerEvents = function(element) {
 				MAIDSafe.loadBranches(jQuery(event.target));
 			});
 	buttons = jQuery('button');
-	jQuery(buttons[buttons.length - 3]).on('click', new MAIDSafe.AddClickObserver(element).register);
+	jQuery(buttons[buttons.length - 3]).on('click',
+			new MAIDSafe.AddClickObserver(element).register);
 };
 MAIDSafe.loadRepos = function(element) {
 	var options = '';
 	if (!MAIDSafe.hasOwnProperty('repos')) {
 		return;
-	}
+	}	
 	for (var i = 0; i < MAIDSafe.repos.length; i++) {
 		options += '<option id="' + MAIDSafe.repos[i].name + '">'
 				+ MAIDSafe.repos[i].name + '</option>';
@@ -78,8 +106,9 @@ MAIDSafe.getRepositories = function() {
 		headers : {
 			'Authorization' : 'token ' + MAIDSafe.token
 		}
-	}).success(function(data) {
-		MAIDSafe.repos = data;
+	}).success(function(data) {		
+		MAIDSafe.repos = data;		
+		MAIDSafe.sort.repository(MAIDSafe.repos);		
 		MAIDSafe.loadRepos();
 	})
 };
