@@ -8,7 +8,7 @@
 	    <l:main-panel>
 	       	<h1>Parameters</h1>
 	       	<div style="padding:10px">
-	       		<h4>Base Branch: {it.getBaseBranch()}</h4>
+	       		<b>Base Branch:</b> ${it.getBaseBranch()}
 	       	</div>
 	       	<j:forEach var="param" items="${it.getParameters()}">
 	       		<div style="padding:10px">

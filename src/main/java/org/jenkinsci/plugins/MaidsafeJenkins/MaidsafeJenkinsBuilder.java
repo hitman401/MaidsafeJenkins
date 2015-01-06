@@ -333,7 +333,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 	@SuppressWarnings({ "rawtypes", "serial" })
 	@Extension
 	public static class BuildRunlistener extends RunListener<Run> implements Serializable {
-		private String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s";
+		private String DEL_BRANCH_CMD = "git checkout %s && git branch -D %s || : ";
 		private String DEL_BRANCH_SUBMOD_CMD = "git submodule foreach 'git checkout %s && git branch -D %s || : '";
 
 		private TargetParameterBuildAction getTargetParameterAction(Run<?, ?> build) {
