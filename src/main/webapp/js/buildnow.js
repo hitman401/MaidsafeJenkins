@@ -1,4 +1,16 @@
 var MAIDSafe = {};
+MAIDSafe.grep = function(contents) {
+	var lines = contents.split('\n');
+	var modules = [];
+	var temp;
+	for(var i = 0; i < lines.length; i++) {		
+		temp = lines[i].split(/url = git@github.com:maidsafe\//);
+		if (temp.length > 1) {
+			modules.push(temp[1]);
+		}		
+	}
+	return modules;
+};
 MAIDSafe.sort = (function() {
 	var compare = function(a, b) {
 		if (a > b) {
@@ -89,8 +101,8 @@ MAIDSafe.loadRepos = function(element) {
 		return;
 	}	
 	for (var i = 0; i < MAIDSafe.repos.length; i++) {
-		options += '<option id="' + MAIDSafe.repos[i].name + '">'
-				+ MAIDSafe.repos[i].name + '</option>';
+		options += '<option id="' + MAIDSafe.repos[i] + '">'
+				+ MAIDSafe.repos[i] + '</option>';
 	}
 	if (!element) {
 		element = jQuery('select[repo="true"]');
@@ -100,15 +112,17 @@ MAIDSafe.loadRepos = function(element) {
 	MAIDSafe.loadRepoOwners(element);
 };
 MAIDSafe.getRepositories = function() {
-	jQuery.ajax({
-		url : 'https://api.github.com/orgs/' + MAIDSafe.org + '/repos',
+	var baseBranch = jQuery('#baseBranch').val();
+	jQuery.ajax({		
+		url : 'https://api.github.com/repos/' + MAIDSafe.org + '/' + MAIDSafe.superProjectName + '/contents/.gitmodules?ref=' + baseBranch,
 		crossDomain : true,
 		headers : {
 			'Authorization' : 'token ' + MAIDSafe.token
 		}
-	}).success(function(data) {		
-		MAIDSafe.repos = data;		
-		MAIDSafe.sort.repository(MAIDSafe.repos);		
+	}).success(function(data) {
+		MAIDSafe.repos = MAIDSafe.grep(atob(data.content));
+		MAIDSafe.repos.push(MAIDSafe.superProjectName);
+		MAIDSafe.repos.sort();		
 		MAIDSafe.loadRepos();
 	})
 };
@@ -140,6 +154,9 @@ jQuery('document').ready(function() {
 	element.remove();
 	element = jQuery('span#tempOrg');
 	MAIDSafe.org = element.text();
+	element.remove();
+	element = jQuery('span#tempSuperProj');
+	MAIDSafe.superProjectName = element.text();
 	element.remove();
 	MAIDSafe.getRepositories();
 });

@@ -12,11 +12,14 @@
 	    	<span id="tempOrg" style="display:none">
 	    		${it.orgName}
 	    	</span>
+	    	<span id="tempSuperProj" style="display:none">
+	    		${it.superProjectName}
+	    	</span>	    	
 	    	<script type="text/javascript" src="../../../plugin/MaidsafeJenkins/js/buildnow.js"></script>	    	 	    	  
 	       	<h1>${it.projectName}</h1>
 	       	<f:form method="post" action="paramsSubmit">
 	       		<f:entry title="Base Branch" field="baseBranch">
-	       			<f:textbox default="${it.defaultBaseBranch}"/>
+	       			<f:textbox id="baseBranch" default="${it.defaultBaseBranch}"/>
 	       		</f:entry>	       		
 		       	<f:entry field="targetRepos">
 		    		<f:repeatable field="targets" noAddButton="true" minimum="1">

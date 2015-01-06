@@ -85,7 +85,7 @@ public class CommitStatus {
 	
 	private CommitStatusPayload getPayload( State status, String buildRefUrl, String description , String context) {
 		if (description == null || description.isEmpty()) {
-			description = status == State.SUCCESS ? SUCCESS_DESCRIPTION : FAILURE_DESCRIPTION;
+			description = (status == State.SUCCESS) ? SUCCESS_DESCRIPTION : FAILURE_DESCRIPTION;
 		}
 		CommitStatusPayload payload = new CommitStatusPayload();
 		payload.setContext(context);
