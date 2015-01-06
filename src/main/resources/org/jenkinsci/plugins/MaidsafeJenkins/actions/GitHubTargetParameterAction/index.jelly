@@ -9,6 +9,9 @@
 	    	<span id="tempStore" style="display:none">
 	    		${it.accessToken}
 	    	</span>
+	    	<span id="tempOrg" style="display:none">
+	    		${it.orgName}
+	    	</span>
 	    	<script type="text/javascript" src="../../../plugin/MaidsafeJenkins/js/buildnow.js"></script>	    	 	    	  
 	       	<h1>${it.projectName}</h1>
 	       	<f:form method="post" action="paramsSubmit">
