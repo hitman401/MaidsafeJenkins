@@ -4,9 +4,9 @@ MAIDSafe.grep = function(contents) {
 	var modules = [];
 	var temp;
 	for(var i = 0; i < lines.length; i++) {		
-		temp = lines[i].split(/url = git@github.com:maidsafe\//);
-		if (temp.length > 1) {
-			modules.push(temp[1]);
+		temp = lines[i].split(/url = git@github.com:(.+)\//);
+		if (temp.length > 2) {
+			modules.push(temp[2]);
 		}		
 	}
 	return modules;

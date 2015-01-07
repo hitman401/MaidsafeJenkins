@@ -199,7 +199,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 			/**************************************/
 			if (!issueKey.isEmpty()) {
 				logger.println("Process initiated for token #" + issueKey);
-				build.setDisplayName(build.getDisplayName() + " - " + issueKey);
+				build.setDisplayName(build.getDisplayName() + " - " + issueKey.toUpperCase());
 			}
 			checkoutAction.setIssueKey(issueKey);
 			checkoutAction.setOrgName(orgName);
@@ -284,6 +284,7 @@ public class MaidsafeJenkinsBuilder extends Builder {
 		rootDir = build.getWorkspace();
 		logger.println("Git REPO :: " + rootDir.getRemote());
 		try {
+			build.setDisplayName(build.getDisplayName() + " - Custom Build");
 			envVars = build.getEnvironment(listener);
 			script = new ShellScript(build.getWorkspace(), launcher, envVars);
 			shellCommands = new ArrayList<String>();
